@@ -85,6 +85,9 @@ func setClaudeDefaultAgent(settingsPath, statePath, agentName string) error {
 	if previous == agentName {
 		return nil
 	}
+	if err := os.MkdirAll(filepath.Dir(settingsPath), 0o755); err != nil {
+		return err
+	}
 	state := claudeLinkState{PreviousAgent: previous}
 	stateBytes, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
@@ -99,9 +102,6 @@ func setClaudeDefaultAgent(settingsPath, statePath, agentName string) error {
 		return err
 	}
 	out = append(out, '\n')
-	if err := os.MkdirAll(filepath.Dir(settingsPath), 0o755); err != nil {
-		return err
-	}
 	return os.WriteFile(settingsPath, out, 0o644)
 }
 

@@ -68,7 +68,6 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("MUSTER_HOME", filepath.Join(home, "muster"))
 	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
-	_ = os.MkdirAll(filepath.Join(home, ".gemini", "antigravity-cli"), 0o755)
 
 	kitDir, err := kit.Install()
 	if err != nil {
@@ -100,6 +99,10 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	}
 	agyAgent := filepath.Join(home, ".gemini", "config", "agents", orchestratorAgentName, "agent.md")
 	if _, err := os.Stat(agyAgent); err != nil {
+		t.Fatal(err)
+	}
+	agySettings := filepath.Join(home, ".gemini", "antigravity-cli", "settings.json")
+	if _, err := os.Stat(agySettings); err != nil {
 		t.Fatal(err)
 	}
 }
