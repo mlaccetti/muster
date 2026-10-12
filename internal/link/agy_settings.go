@@ -39,6 +39,9 @@ func setAgyDefaultAgent(settingsPath, statePath string, dryRun bool) error {
 	if previous == orchestratorAgentName {
 		return nil
 	}
+	if err := os.MkdirAll(filepath.Dir(settingsPath), 0o755); err != nil {
+		return err
+	}
 	state := agyLinkState{PreviousAgent: previous}
 	stateBytes, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
@@ -53,9 +56,6 @@ func setAgyDefaultAgent(settingsPath, statePath string, dryRun bool) error {
 		return err
 	}
 	out = append(out, '\n')
-	if err := os.MkdirAll(filepath.Dir(settingsPath), 0o755); err != nil {
-		return err
-	}
 	return os.WriteFile(settingsPath, out, 0o644)
 }
 
