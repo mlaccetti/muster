@@ -14,22 +14,24 @@ func cursorRulesDir() (string, error) {
 	return filepath.Join(home, ".cursor", "rules"), nil
 }
 
-func cursorOrchestratorRule(kitDir string) string {
-	orch := kitDir + "/policy/orchestrator.md"
-	work := kitDir + "/policy/worker.md"
+func cursorOrchestratorMDC(kitDir string) string {
 	return fmt.Sprintf(`---
-description: Muster orchestrator and worker policies
+description: Muster orchestrator (default agent policy)
 alwaysApply: true
 ---
 
-# Muster (managed by muster link)
+%s
+`, orchestratorBlock(kitDir))
+}
 
-Orchestrator: read and follow %s
+func cursorWorkerMDC(kitDir string) string {
+	return fmt.Sprintf(`---
+description: Muster worker policy reference
+alwaysApply: false
+---
 
-Workers: follow %s and write worker-report.v1 to the report path in the brief.
-
-Dispatch with muster worker or muster dispatch; use only the routing JSON line on stdout for the next step.
-`, orch, work)
+%s
+`, workerBlock(kitDir))
 }
 
 func linkCursorGlobal(kitDir string, dryRun bool) ([]string, error) {
@@ -37,22 +39,27 @@ func linkCursorGlobal(kitDir string, dryRun bool) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	target := filepath.Join(dir, "muster-orchestrator.mdc")
-	if err := writeFile(target, cursorOrchestratorRule(kitDir), dryRun); err != nil {
+	var targets []string
+	orchRule := filepath.Join(dir, "muster-orchestrator.mdc")
+	if err := writeFile(orchRule, cursorOrchestratorMDC(kitDir), dryRun); err != nil {
 		return nil, err
 	}
-	worker := filepath.Join(dir, "muster-worker.mdc")
-	body := fmt.Sprintf(`---
-description: Muster worker policy reference
-alwaysApply: false
----
-
-%s
-`, workerBlock(kitDir))
-	if err := writeFile(worker, body, dryRun); err != nil {
+	targets = append(targets, orchRule)
+	workerRule := filepath.Join(dir, "muster-worker.mdc")
+	if err := writeFile(workerRule, cursorWorkerMDC(kitDir), dryRun); err != nil {
 		return nil, err
 	}
-	return []string{target, worker}, nil
+	targets = append(targets, workerRule)
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	agents := filepath.Join(home, ".cursor", "AGENTS.md")
+	if err := patchOrchestratorAgents(agents, kitDir, dryRun); err != nil {
+		return nil, err
+	}
+	targets = append(targets, agents)
+	return targets, nil
 }
 
 func unlinkCursorGlobal(dryRun bool) error {
@@ -64,21 +71,30 @@ func unlinkCursorGlobal(dryRun bool) error {
 		_ = os.Remove(filepath.Join(dir, "muster-orchestrator.mdc"))
 		_ = os.Remove(filepath.Join(dir, "muster-worker.mdc"))
 	}
-	return nil
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	return unlinkOrchestratorAgents(filepath.Join(home, ".cursor", "AGENTS.md"), dryRun)
 }
 
 func linkCursorProject(projectDir, kitDir string, dryRun bool) ([]string, error) {
 	dir := filepath.Join(projectDir, ".cursor", "rules")
 	target := filepath.Join(dir, "muster-orchestrator.mdc")
-	if err := writeFile(target, cursorOrchestratorRule(kitDir), dryRun); err != nil {
+	if err := writeFile(target, cursorOrchestratorMDC(kitDir), dryRun); err != nil {
 		return nil, err
 	}
-	return []string{target}, nil
+	worker := filepath.Join(projectDir, ".muster", "cursor-worker.md")
+	if err := writeFile(worker, workerBlock(kitDir), dryRun); err != nil {
+		return nil, err
+	}
+	return []string{target, worker}, nil
 }
 
 func unlinkCursorProject(projectDir string, dryRun bool) error {
 	if !dryRun {
 		_ = os.Remove(filepath.Join(projectDir, ".cursor", "rules", "muster-orchestrator.mdc"))
+		_ = os.Remove(filepath.Join(projectDir, ".muster", "cursor-worker.md"))
 	}
 	return nil
 }

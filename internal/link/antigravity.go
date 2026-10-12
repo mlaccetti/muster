@@ -22,25 +22,31 @@ func linkAntigravityGlobal(kitDir string, dryRun bool) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	var targets []string
+	agents := filepath.Join(dir, "AGENTS.md")
+	if err := patchOrchestratorAgents(agents, kitDir, dryRun); err != nil {
+		return nil, err
+	}
+	targets = append(targets, agents)
 	target := filepath.Join(dir, "muster-orchestrator.md")
 	if err := writeFile(target, orchestratorBlock(kitDir), dryRun); err != nil {
 		return nil, err
 	}
+	targets = append(targets, target)
 	worker := filepath.Join(dir, "muster-worker.md")
 	if err := writeFile(worker, workerBlock(kitDir), dryRun); err != nil {
 		return nil, err
 	}
-	readme := filepath.Join(dir, "muster-README.md")
-	instructions := "Load muster-orchestrator.md for orchestrator sessions and muster-worker.md for worker sessions (managed by muster link).\n"
-	if err := writeFile(readme, instructions, dryRun); err != nil {
-		return nil, err
-	}
-	return []string{target, worker, readme}, nil
+	targets = append(targets, worker)
+	return targets, nil
 }
 
 func unlinkAntigravityGlobal(dryRun bool) error {
 	dir, err := antigravityConfigDir()
 	if err != nil {
+		return err
+	}
+	if err := unlinkOrchestratorAgents(filepath.Join(dir, "AGENTS.md"), dryRun); err != nil {
 		return err
 	}
 	if !dryRun {
@@ -61,12 +67,17 @@ func linkAntigravityProject(projectDir, kitDir string, dryRun bool) ([]string, e
 	if err := writeFile(worker, workerBlock(kitDir), dryRun); err != nil {
 		return nil, err
 	}
-	return []string{target, worker}, nil
+	workerRef := filepath.Join(projectDir, ".muster", "agy-worker.md")
+	if err := writeFile(workerRef, workerBlock(kitDir), dryRun); err != nil {
+		return nil, err
+	}
+	return []string{target, worker, workerRef}, nil
 }
 
 func unlinkAntigravityProject(projectDir string, dryRun bool) error {
 	if !dryRun {
 		_ = os.RemoveAll(filepath.Join(projectDir, ".muster", "antigravity"))
+		_ = os.Remove(filepath.Join(projectDir, ".muster", "agy-worker.md"))
 	}
 	return nil
 }

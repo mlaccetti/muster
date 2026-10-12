@@ -39,6 +39,13 @@ func TestLinkProjectClaudeOnly(t *testing.T) {
 	if !strings.Contains(string(raw), markerStart) {
 		t.Fatalf("CLAUDE.md not wired: %s", raw)
 	}
+	agents, err := os.ReadFile(filepath.Join(project, "AGENTS.md"))
+	if err != nil || !strings.Contains(string(agents), markerStart) {
+		t.Fatalf("AGENTS.md not wired: %v %s", err, agents)
+	}
+	if !strings.Contains(string(agents), "muster worker --harness") {
+		t.Fatalf("AGENTS.md missing CLI dispatch: %s", agents)
+	}
 	if _, err := os.Stat(filepath.Join(project, ".muster", "orchestrator.path")); err != nil {
 		t.Fatal(err)
 	}

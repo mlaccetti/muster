@@ -46,23 +46,14 @@ func unlinkCodexGlobal(dryRun bool) error {
 }
 
 func linkCodexProject(projectDir, kitDir string, dryRun bool) ([]string, error) {
-	target := filepath.Join(projectDir, "AGENTS.md")
-	block := orchestratorBlock(kitDir)
-	if err := patchFile(target, func(s string) string { return upsertManagedBlock(s, block) }, dryRun); err != nil {
-		return nil, err
-	}
 	worker := filepath.Join(projectDir, ".muster", "codex-worker.md")
 	if err := writeFile(worker, workerBlock(kitDir), dryRun); err != nil {
 		return nil, err
 	}
-	return []string{target, worker}, nil
+	return []string{worker}, nil
 }
 
 func unlinkCodexProject(projectDir string, dryRun bool) error {
-	target := filepath.Join(projectDir, "AGENTS.md")
-	if err := patchFile(target, removeManagedBlock, dryRun); err != nil {
-		return err
-	}
 	if !dryRun {
 		_ = os.Remove(filepath.Join(projectDir, ".muster", "codex-worker.md"))
 	}
