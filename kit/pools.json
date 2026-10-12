@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "pass_order": ["claude", "codex", "cursor"],
+  "tiers": {
+    "implement": [
+      {"harness": "claude", "model": "", "family": "anthropic", "write": true},
+      {"harness": "codex", "model": "gpt-6-luna", "family": "openai", "write": true, "boundary": "sandbox"}
+    ],
+    "review": [
+      {"harness": "codex", "model": "gpt-6-luna", "family": "openai", "write": false, "boundary": "sandbox"},
+      {"harness": "claude", "model": "", "family": "anthropic", "write": false}
+    ],
+    "plan": [
+      {"harness": "claude", "model": "", "family": "anthropic", "write": false},
+      {"harness": "codex", "model": "gpt-6-luna", "family": "openai", "write": false, "boundary": "sandbox"}
+    ],
+    "cheap": [
+      {"harness": "claude", "model": "haiku", "family": "anthropic", "write": false},
+      {"harness": "codex", "model": "gpt-6-luna", "family": "openai", "write": false, "boundary": "sandbox"}
+    ]
+  }
+}

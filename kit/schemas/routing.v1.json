@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mlaccetti/muster/kit/schemas/routing.v1.json",
+  "title": "routing.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "harness", "family", "model", "report", "reason_code", "reset"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["ok", "exhausted", "error", "no_candidate"]
+    },
+    "harness": { "type": ["string", "null"] },
+    "family": { "type": ["string", "null"] },
+    "model": { "type": ["string", "null"] },
+    "report": { "type": "string" },
+    "reason_code": {
+      "type": "string",
+      "enum": [
+        "none",
+        "all_avoided",
+        "none_usable",
+        "harness_error",
+        "report_missing",
+        "limit",
+        "internal"
+      ]
+    },
+    "reset": { "type": "integer" },
+    "dispatch_id": { "type": "string" },
+    "baseline_sha256": { "type": "string" },
+    "ended": { "type": "boolean" }
+  }
+}

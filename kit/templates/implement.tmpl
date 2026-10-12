@@ -1,0 +1,25 @@
+# Brief
+
+## Goal
+{{.Goal}}
+
+## Modifiable paths
+{{range .ModifiablePaths}}- {{.}}
+{{end}}
+## Done when
+{{.DoneWhen}}
+
+## Verify
+{{.VerifyCommand}}
+
+## Out of scope
+{{.OutOfScope}}
+
+## Worktree
+Path: {{.WorktreePath}}
+Branch: {{if .WorktreeBranch}}{{.WorktreeBranch}}{{else}}(none){{end}}
+
+{{if .ReadFirst}}
+## Read first
+{{range .ReadFirst}}- {{.}}
+{{end}}{{end}}

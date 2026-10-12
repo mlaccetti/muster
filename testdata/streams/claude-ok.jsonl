@@ -1,0 +1,4 @@
+{"type":"system","subtype":"init","session_id":"s1","model":"claude-test"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Working on it."}]}}
+{"type":"rate_limit_event","rate_limit_info":{"status":"allowed","resetsAt":1,"rateLimitType":"five_hour"}}
+{"type":"result","subtype":"success","is_error":false,"result":"Done.","session_id":"s1"}

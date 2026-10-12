@@ -1,0 +1,8 @@
+{
+  "goal": "Touch example.txt",
+  "modifiable_paths": ["example.txt"],
+  "done_when": "example.txt exists",
+  "verify_command": "test -f example.txt",
+  "out_of_scope": "other files",
+  "worktree": { "path": ".", "branch": null }
+}

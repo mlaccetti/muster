@@ -1,0 +1,6 @@
+CALL name=claude pwd=/Users/michael/workspace/muster
+ARG -p
+ARG Write your final report to /tmp/muster-report.json when you are done.
+CALL name=muster-codex pwd=/Users/michael/workspace/muster
+ARG exec
+ARG Follow the brief at /x. Write your final report to /tmp/mr.json when you are done.

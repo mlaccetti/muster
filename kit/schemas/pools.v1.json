@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mlaccetti/muster/kit/schemas/pools.v1.json",
+  "title": "pools.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "pass_order", "tiers"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "pass_order": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["claude", "codex", "cursor", "antigravity"]
+      },
+      "minItems": 1
+    },
+    "tiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["implement", "review", "plan", "cheap"],
+      "properties": {
+        "implement": { "$ref": "#/$defs/candidates" },
+        "review": { "$ref": "#/$defs/candidates" },
+        "plan": { "$ref": "#/$defs/candidates" },
+        "cheap": { "$ref": "#/$defs/candidates" }
+      }
+    }
+  },
+  "$defs": {
+    "candidates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/candidate" }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["harness", "model", "family", "write"],
+      "properties": {
+        "harness": {
+          "type": "string",
+          "enum": ["claude", "codex", "cursor", "antigravity"]
+        },
+        "model": { "type": "string" },
+        "family": {
+          "type": "string",
+          "enum": ["anthropic", "openai", "google", "xai", "cursor", "other"]
+        },
+        "write": { "type": "boolean" },
+        "boundary": { "type": "string", "enum": ["hook", "sandbox"] }
+      }
+    }
+  }
+}

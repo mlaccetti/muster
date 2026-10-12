@@ -1,0 +1,9 @@
+id: minimal-pass
+units:
+  - name: unit1
+    brief: ../../testdata/briefs/minimal.json
+    harness: claude
+gates:
+  - name: always-fail
+    command: "false"
+    timeout_seconds: 5
