@@ -1,9 +1,0 @@
-{
-  "verdict": "DONE",
-  "changed": ["example.txt"],
-  "commands": ["true"],
-  "evidence": ["stub"],
-  "assumptions": [],
-  "not_done": [],
-  "observations": []
-}

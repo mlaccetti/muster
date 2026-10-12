@@ -9,7 +9,7 @@ import (
 func newInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
-		Short: "Install kit and default pools to MUSTER_HOME",
+		Short: "Install policy kit to MUSTER_HOME",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir, err := kit.Install()
 			if err != nil {
@@ -19,7 +19,7 @@ func newInstallCmd() *cobra.Command {
 			writef(cmd.OutOrStdout(), "Installed kit to %s\n", dir)
 			writef(cmd.OutOrStdout(), "Orchestrator policy: %s/policy/orchestrator.md\n", dir)
 			writef(cmd.OutOrStdout(), "Worker policy: %s/policy/worker.md\n", dir)
-			writef(cmd.OutOrStdout(), "Pools: %s/pools.json\n", home)
+			_ = home
 			writef(cmd.OutOrStdout(), "Next: muster link   # wire orchestrator + worker into harness configs\n")
 			return nil
 		},

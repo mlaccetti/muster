@@ -38,15 +38,6 @@ func Install() (string, error) {
 	if err := os.WriteFile(filepath.Join(home, "installed-kit-version.txt"), []byte(paths.KitVersion+"\n"), 0o644); err != nil {
 		return "", err
 	}
-	poolsDest, err := paths.PoolsFile()
-	if err != nil {
-		return "", err
-	}
-	if _, err := os.Stat(poolsDest); os.IsNotExist(err) {
-		if err := copyFile(filepath.Join(dest, "pools.json"), poolsDest); err != nil {
-			return "", err
-		}
-	}
 	active, err := paths.KitDir()
 	if err != nil {
 		return dest, err
@@ -93,21 +84,6 @@ func copyFSFile(src fs.FS, name, dest string) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return err
 	}
-	out, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer closeIgnore(out)
-	_, err = io.Copy(out, in)
-	return err
-}
-
-func copyFile(src, dest string) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer closeIgnore(in)
 	out, err := os.Create(dest)
 	if err != nil {
 		return err

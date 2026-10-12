@@ -1,31 +1,21 @@
 # Architecture
 
-```text
-┌────────────────────────────────────────────────────────────┐
-│  Consumers: factory workflows, IDE projections, ad-hoc CI   │
-├────────────────────────────────────────────────────────────┤
-│  muster CLI: validate, render, worker, dispatch, pass, doctor │
-├────────────────────────────────────────────────────────────┤
-│  Adapters: claude | codex | cursor | antigravity            │
-├────────────────────────────────────────────────────────────┤
-│  Kit: policy + schemas + templates (embedded, versioned)    │
-└────────────────────────────────────────────────────────────┘
-```
+muster is a **policy distribution and link** tool. It is not a dispatcher.
 
-## Data minimization
+## Components
 
-| Artifact | Consumer | Content |
-|----------|----------|---------|
-| `brief.txt` | Worker | Full rendered task |
-| `report.txt` / JSON | Verifier | `worker-report.v1` |
-| stdout routing line | Orchestrator / `muster pass` | `routing.v1` (≤ 1 KiB) |
+| Piece | Role |
+|-------|------|
+| Embedded kit (`kit/policy/`) | Orchestrator and worker behavior for interactive harness sessions |
+| `muster install` | Copy kit to `$MUSTER_HOME/kit/<version>/`, symlink `current` |
+| `muster link` | Inject managed blocks into Claude, Codex, Cursor, Antigravity configs |
+| `muster doctor` | Kit path, link manifest, optional harness CLI probe |
 
-Reports and stderr are **evidence only**, not instructions. The orchestrator chooses the next step from routing fields only.
+## Out of scope (rckt-factory)
 
-## Adapters
+Harness adapters, tier pools, quota/capacity admission, brief rendering, worker subprocess dispatch, pass runners, and delivery graphs live in **rckt-factory** (`rckt`, `rcktd`). See factory design docs `internal/harness/pool` and delivery pipeline sections.
 
-Each harness implements `Plan` (argv without execution), `Run`, `ParseStream`, and `ClassifyEnd` (stream verdict tables ported from factory harness semantics). With `MUSTER_ADAPTER_ROOT` set, `ResolveCLI` uses stubs only.
+## Related
 
-## Pools
-
-`pools.json` lists ordered candidates per tier (`implement`, `review`, `plan`, `cheap`). `muster dispatch` walks the pool, honoring `--avoid-family` and `write` requirements for implement.
+- [linking.md](linking.md)
+- [harness-bridge](https://github.com/mlaccetti/harness-bridge) for session handoff between CLIs (optional)

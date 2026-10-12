@@ -10,10 +10,6 @@ func (e *exitError) Error() string {
 	return fmt.Sprintf("exit %d", e.code)
 }
 
-func exitErr(code int) error {
-	return &exitError{code: code}
-}
-
 func ExitCode(err error) int {
 	if err == nil {
 		return 0

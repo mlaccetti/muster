@@ -26,9 +26,9 @@ alwaysApply: true
 
 Orchestrator: read and follow %s
 
-Workers: follow %s and write worker-report.v1 to the report path in the brief.
+Workers: follow %s and return the structured handback defined there.
 
-Dispatch with muster worker or muster dispatch; use only the routing JSON line on stdout for the next step.
+Harness dispatch and durable runs: use rckt-factory (`+"`rckt run`"+`) when installed.
 `, orch, work)
 }
 

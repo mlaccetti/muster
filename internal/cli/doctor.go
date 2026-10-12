@@ -2,11 +2,11 @@ package cli
 
 import (
 	"os"
+	"path/filepath"
 
-	"github.com/mlaccetti/muster/internal/adapter"
+	"github.com/mlaccetti/muster/internal/harnesscli"
 	"github.com/mlaccetti/muster/internal/kit"
 	"github.com/mlaccetti/muster/internal/link"
-	"github.com/mlaccetti/muster/internal/schema"
 	"github.com/spf13/cobra"
 )
 
@@ -21,10 +21,11 @@ func newDoctorCmd() *cobra.Command {
 				writef(cmd.ErrOrStderr(), "kit: %v\n", err)
 			} else {
 				writef(cmd.OutOrStdout(), "kit: ok (%s)\n", dir)
-			}
-			for _, kind := range []string{"brief", "report", "routing", "pools"} {
-				if _, err := schema.SchemaOK(kind); err != nil {
-					writef(cmd.ErrOrStderr(), "schema %s: %v\n", kind, err)
+				for _, name := range []string{"orchestrator.md", "worker.md"} {
+					p := filepath.Join(dir, "policy", name)
+					if _, err := os.Stat(p); err != nil {
+						writef(cmd.ErrOrStderr(), "policy %s: missing\n", name)
+					}
 				}
 			}
 			if m, err := link.LoadManifest(); err == nil {
@@ -33,18 +34,14 @@ func newDoctorCmd() *cobra.Command {
 					writef(cmd.ErrOrStderr(), "link: stale kit paths in harness snippets (manifest %s, active %s); run muster link\n", m.KitDir, dir)
 				}
 			} else {
-				writef(cmd.OutOrStderr(), "link: not configured (run muster link)\n")
+				writef(cmd.ErrOrStderr(), "link: not configured (run muster link)\n")
 			}
 			if os.Getenv("MUSTER_SKIP_PROBE") == "1" || !probe {
 				writelnf(cmd.OutOrStdout(), "probe: skipped")
 				return nil
 			}
-			for _, id := range adapter.AllIDs() {
-				a, err := adapter.Get(id)
-				if err != nil {
-					continue
-				}
-				path, ver, err := a.ResolveCLI()
+			for _, id := range harnesscli.AllIDs() {
+				path, ver, err := harnesscli.ResolveCLI(id)
 				if err != nil {
 					writef(cmd.ErrOrStderr(), "%s: %v\n", id, err)
 					continue
