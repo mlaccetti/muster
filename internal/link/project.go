@@ -30,16 +30,10 @@ Harness-specific entrypoints are linked by ` + "`muster link`" + ` (see $MUSTER_
 	if err := os.WriteFile(filepath.Join(dir, "worker.path"), []byte(kitDir+"/policy/worker.md\n"), 0o644); err != nil {
 		return "", err
 	}
-	if err := linkProjectAgentsMD(projectDir, kitDir, dryRun); err != nil {
-		return "", err
-	}
 	return dir, nil
 }
 
 func unlinkProject(projectDir string, dryRun bool) error {
-	if err := unlinkProjectAgentsMD(projectDir, dryRun); err != nil {
-		return err
-	}
 	dir := filepath.Join(projectDir, ".muster")
 	if dryRun {
 		return nil

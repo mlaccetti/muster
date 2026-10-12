@@ -105,6 +105,7 @@ func Run(opts Options) (*Result, error) {
 		if opts.Project && !opts.DryRun {
 			_ = unlinkProject(projectDir, false)
 		}
+		_ = removeLinkShims(opts.DryRun)
 		if !opts.DryRun {
 			_ = os.Remove(manifestPathSafe())
 		}
@@ -117,6 +118,9 @@ func Run(opts Options) (*Result, error) {
 		}
 	}
 
+	if err := installLinkShims(opts.DryRun); err != nil {
+		return nil, err
+	}
 	if !opts.DryRun {
 		m := &Manifest{KitDir: kitDir, Project: projectDir, Harnesses: res.Harnesses}
 		if err := SaveManifest(m); err != nil {

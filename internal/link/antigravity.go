@@ -5,79 +5,93 @@ import (
 	"path/filepath"
 )
 
-func antigravityConfigDir() (string, error) {
+func agySettingsDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	// Antigravity (agy) user config; override with ANTIGRAVITY_HOME if set.
-	if v := os.Getenv("ANTIGRAVITY_HOME"); v != "" {
-		return v, nil
+	return filepath.Join(home, ".gemini", "antigravity-cli"), nil
+}
+
+func agyAgentsRoot() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
 	}
-	return filepath.Join(home, ".antigravity"), nil
+	return filepath.Join(home, ".gemini", "config", "agents"), nil
 }
 
 func linkAntigravityGlobal(kitDir string, dryRun bool) ([]string, error) {
-	dir, err := antigravityConfigDir()
+	agentsRoot, err := agyAgentsRoot()
 	if err != nil {
 		return nil, err
 	}
-	var targets []string
-	agents := filepath.Join(dir, "AGENTS.md")
-	if err := patchOrchestratorAgents(agents, kitDir, dryRun); err != nil {
+	var touched []string
+
+	orchAgent := filepath.Join(agentsRoot, orchestratorAgentName, "agent.md")
+	if err := linkKitFileDryRun(orchAgent, dryRun, kitDir, "agy", orchestratorAgentName, "agent.md"); err != nil {
 		return nil, err
 	}
-	targets = append(targets, agents)
-	target := filepath.Join(dir, "muster-orchestrator.md")
-	if err := writeFile(target, orchestratorBlock(kitDir), dryRun); err != nil {
+	touched = append(touched, orchAgent)
+
+	workerAgent := filepath.Join(agentsRoot, workerAgentName, "agent.md")
+	if err := linkKitFileDryRun(workerAgent, dryRun, kitDir, "agy", workerAgentName, "agent.md"); err != nil {
 		return nil, err
 	}
-	targets = append(targets, target)
-	worker := filepath.Join(dir, "muster-worker.md")
-	if err := writeFile(worker, workerBlock(kitDir), dryRun); err != nil {
+	touched = append(touched, workerAgent)
+
+	settingsDir, err := agySettingsDir()
+	if err != nil {
 		return nil, err
 	}
-	targets = append(targets, worker)
-	return targets, nil
+	settingsPath := filepath.Join(settingsDir, "settings.json")
+	if err := setAgyDefaultAgent(settingsPath, filepath.Join(settingsDir, ".muster-link.json"), dryRun); err != nil {
+		return nil, err
+	}
+	touched = append(touched, settingsPath)
+
+	// Legacy ~/.antigravity prose files.
+	if !dryRun {
+		home, _ := os.UserHomeDir()
+		legacy := filepath.Join(home, ".antigravity")
+		_ = os.Remove(filepath.Join(legacy, "muster-orchestrator.md"))
+		_ = os.Remove(filepath.Join(legacy, "muster-worker.md"))
+		_ = os.Remove(filepath.Join(legacy, "muster-README.md"))
+	}
+	return touched, nil
 }
 
 func unlinkAntigravityGlobal(dryRun bool) error {
-	dir, err := antigravityConfigDir()
+	agentsRoot, err := agyAgentsRoot()
 	if err != nil {
 		return err
 	}
-	if err := unlinkOrchestratorAgents(filepath.Join(dir, "AGENTS.md"), dryRun); err != nil {
+	if !dryRun {
+		_ = removeLink(filepath.Join(agentsRoot, orchestratorAgentName, "agent.md"))
+		_ = os.Remove(filepath.Join(agentsRoot, orchestratorAgentName))
+		_ = removeLink(filepath.Join(agentsRoot, workerAgentName, "agent.md"))
+		_ = os.Remove(filepath.Join(agentsRoot, workerAgentName))
+	}
+	settingsDir, err := agySettingsDir()
+	if err != nil {
 		return err
 	}
-	if !dryRun {
-		_ = os.Remove(filepath.Join(dir, "muster-orchestrator.md"))
-		_ = os.Remove(filepath.Join(dir, "muster-worker.md"))
-		_ = os.Remove(filepath.Join(dir, "muster-README.md"))
-	}
-	return nil
+	return restoreAgyDefaultAgent(filepath.Join(settingsDir, "settings.json"), filepath.Join(settingsDir, ".muster-link.json"), dryRun)
 }
 
 func linkAntigravityProject(projectDir, kitDir string, dryRun bool) ([]string, error) {
-	dir := filepath.Join(projectDir, ".muster", "antigravity")
-	target := filepath.Join(dir, "orchestrator.md")
-	if err := writeFile(target, orchestratorBlock(kitDir), dryRun); err != nil {
+	dir := filepath.Join(projectDir, ".agents", "agents", orchestratorAgentName)
+	target := filepath.Join(dir, "agent.md")
+	if err := linkKitFileDryRun(target, dryRun, kitDir, "agy", orchestratorAgentName, "agent.md"); err != nil {
 		return nil, err
 	}
-	worker := filepath.Join(dir, "worker.md")
-	if err := writeFile(worker, workerBlock(kitDir), dryRun); err != nil {
-		return nil, err
-	}
-	workerRef := filepath.Join(projectDir, ".muster", "agy-worker.md")
-	if err := writeFile(workerRef, workerBlock(kitDir), dryRun); err != nil {
-		return nil, err
-	}
-	return []string{target, worker, workerRef}, nil
+	return []string{target}, nil
 }
 
 func unlinkAntigravityProject(projectDir string, dryRun bool) error {
 	if !dryRun {
-		_ = os.RemoveAll(filepath.Join(projectDir, ".muster", "antigravity"))
-		_ = os.Remove(filepath.Join(projectDir, ".muster", "agy-worker.md"))
+		_ = removeLink(filepath.Join(projectDir, ".agents", "agents", orchestratorAgentName, "agent.md"))
+		_ = os.RemoveAll(filepath.Join(projectDir, ".agents", "agents", orchestratorAgentName))
 	}
 	return nil
 }
