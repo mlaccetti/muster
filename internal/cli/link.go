@@ -68,7 +68,7 @@ By default, muster auto-detects harnesses whose CLIs are on PATH and links both 
 	cmd.Flags().StringArrayVar(&harnesses, "harness", nil, "Harness id (repeatable); default: auto-detect on PATH")
 	cmd.Flags().BoolVar(&all, "all", false, "Link all supported harnesses (do not require CLI on PATH)")
 	cmd.Flags().BoolVar(&global, "global", true, "Link user-level harness config")
-	cmd.Flags().BoolVar(&project, "project", true, "Link project-level config (.muster, CLAUDE.md, AGENTS.md, .cursor/rules)")
+	cmd.Flags().BoolVar(&project, "project", true, "Link project-level config (.muster, .claude/, .cursor/rules, etc.)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print actions without writing files")
 	cmd.Flags().BoolVar(&unlink, "unlink", false, "Remove managed muster snippets")
 	return cmd

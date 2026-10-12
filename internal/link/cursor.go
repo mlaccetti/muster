@@ -1,7 +1,6 @@
 package link
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -14,45 +13,23 @@ func cursorRulesDir() (string, error) {
 	return filepath.Join(home, ".cursor", "rules"), nil
 }
 
-func cursorOrchestratorRule(kitDir string) string {
-	orch := kitDir + "/policy/orchestrator.md"
-	work := kitDir + "/policy/worker.md"
-	return fmt.Sprintf(`---
-description: Muster orchestrator and worker policies
-alwaysApply: true
----
-
-# Muster (managed by muster link)
-
-Orchestrator: read and follow %s
-
-Workers: follow %s and write worker-report.v1 to the report path in the brief.
-
-Dispatch with muster worker or muster dispatch; use only the routing JSON line on stdout for the next step.
-`, orch, work)
-}
-
 func linkCursorGlobal(kitDir string, dryRun bool) ([]string, error) {
 	dir, err := cursorRulesDir()
 	if err != nil {
 		return nil, err
 	}
-	target := filepath.Join(dir, "muster-orchestrator.mdc")
-	if err := writeFile(target, cursorOrchestratorRule(kitDir), dryRun); err != nil {
+	var targets []string
+	orchRule := filepath.Join(dir, "muster-orchestrator.mdc")
+	if err := linkKitFileDryRun(orchRule, dryRun, kitDir, "cursor", "muster-orchestrator.mdc"); err != nil {
 		return nil, err
 	}
-	worker := filepath.Join(dir, "muster-worker.mdc")
-	body := fmt.Sprintf(`---
-description: Muster worker policy reference
-alwaysApply: false
----
-
-%s
-`, workerBlock(kitDir))
-	if err := writeFile(worker, body, dryRun); err != nil {
+	targets = append(targets, orchRule)
+	workerRule := filepath.Join(dir, "muster-worker.mdc")
+	if err := linkKitFileDryRun(workerRule, dryRun, kitDir, "cursor", "muster-worker.mdc"); err != nil {
 		return nil, err
 	}
-	return []string{target, worker}, nil
+	targets = append(targets, workerRule)
+	return targets, nil
 }
 
 func unlinkCursorGlobal(dryRun bool) error {
@@ -61,8 +38,8 @@ func unlinkCursorGlobal(dryRun bool) error {
 		return err
 	}
 	if !dryRun {
-		_ = os.Remove(filepath.Join(dir, "muster-orchestrator.mdc"))
-		_ = os.Remove(filepath.Join(dir, "muster-worker.mdc"))
+		_ = removeLink(filepath.Join(dir, "muster-orchestrator.mdc"))
+		_ = removeLink(filepath.Join(dir, "muster-worker.mdc"))
 	}
 	return nil
 }
@@ -70,7 +47,7 @@ func unlinkCursorGlobal(dryRun bool) error {
 func linkCursorProject(projectDir, kitDir string, dryRun bool) ([]string, error) {
 	dir := filepath.Join(projectDir, ".cursor", "rules")
 	target := filepath.Join(dir, "muster-orchestrator.mdc")
-	if err := writeFile(target, cursorOrchestratorRule(kitDir), dryRun); err != nil {
+	if err := linkKitFileDryRun(target, dryRun, kitDir, "cursor", "muster-orchestrator.mdc"); err != nil {
 		return nil, err
 	}
 	return []string{target}, nil
@@ -78,7 +55,7 @@ func linkCursorProject(projectDir, kitDir string, dryRun bool) ([]string, error)
 
 func unlinkCursorProject(projectDir string, dryRun bool) error {
 	if !dryRun {
-		_ = os.Remove(filepath.Join(projectDir, ".cursor", "rules", "muster-orchestrator.mdc"))
+		_ = removeLink(filepath.Join(projectDir, ".cursor", "rules", "muster-orchestrator.mdc"))
 	}
 	return nil
 }

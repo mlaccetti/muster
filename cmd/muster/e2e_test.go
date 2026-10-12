@@ -28,6 +28,10 @@ func cliBin(t *testing.T) string {
 	out := filepath.Join(os.TempDir(), "muster-e2e-test-bin")
 	cmd := exec.Command("go", "build", "-o", out, "./cmd/muster")
 	cmd.Dir = modRoot
+	cmd.Env = append(os.Environ(),
+		"GOMODCACHE="+filepath.Join(modRoot, ".cache", "gomod"),
+		"GOCACHE="+filepath.Join(modRoot, ".cache", "gobuild"),
+	)
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("build muster: %v", err)
 	}
