@@ -83,7 +83,7 @@ Test layers:
 
 ## Release
 
-Tag `v*` on `main` runs GoReleaser and updates the `muster` formula in [homebrew-tap](https://github.com/mlaccetti/homebrew-tap) (requires `HOMEBREW_TAP_GITHUB_TOKEN`).
+Tag `v*` on `main` runs GoReleaser: GitHub release archives, the Go module at that tag (`go install github.com/mlaccetti/muster/cmd/muster@vX.Y.Z`), and the `muster` formula in [homebrew-tap](https://github.com/mlaccetti/homebrew-tap) (requires `HOMEBREW_TAP_GITHUB_TOKEN`). Release binaries stamp `muster --version` with the tag (e.g. `v0.1.0`).
 
 Preflight: `just release-dry`
 
