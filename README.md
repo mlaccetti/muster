@@ -1,14 +1,25 @@
 # muster
 
-*Harness-neutral briefs, workers, and routing for coding agents.*
+*Same orchestrator and worker behavior in every coding harness.*
 
-**muster** ships a versioned **kit** (policy, JSON Schemas, templates) and a Go **CLI** to validate, render briefs, run workers through harness **adapters**, walk optional **pools**, and drive deterministic **passes** without tying orchestration to one vendor.
+**muster** installs a small, versioned **policy kit** and **links** it into Claude Code, Codex, Cursor Agent, and Antigravity (`agy`). It does not dispatch harnesses, run delivery graphs, or replace **rckt-factory**.
+
+## What muster does
+
+- **`muster install`**: copy the kit to `MUSTER_HOME` (orchestrator + worker policy).
+- **`muster link`**: inject managed snippets so the main session acts as **orchestrator** (plan, delegate, verify) and **worker** subagents stay scoped.
+- **`muster doctor`**: kit on disk, link manifest, optional harness CLI probe.
+
+## What muster does not do
+
+- No `muster worker`, pools, brief rendering, or pass runner. **rckt-factory** owns harness adapters, tier pools, quota/capacity, and durable runs (`rckt` / `rcktd`).
+- No skills or planning content. **rckt-skills** owns brainstorm/plan skills; factory consumes approved plans when you run delivery.
 
 ## Related projects
 
-- **[harness-bridge](https://github.com/mlaccetti/harness-bridge)**: moves conversation context between CLIs (sessions). muster does not parse foreign session JSONL; use harness-bridge for that.
-- **[rckt-factory](https://github.com/mlaccetti/rckt-factory)**: factory workflows, charter, and PR mechanics that can **consume** muster contracts. Factory-specific logic stays out of this repo.
-- **muster**: how work is briefed, executed, and reported back with minimal cross-boundary data (brief, report, routing line).
+- **[rckt-factory](https://github.com/mlaccetti/rckt-factory)**: execution, harness selection, delivery workflows.
+- **[rckt-skills](https://github.com/rckt-corp/rckt-skills)**: planning and decomposition skills (optional).
+- **[harness-bridge](https://github.com/mlaccetti/harness-bridge)**: move conversation context between CLIs (optional).
 
 ## Install
 
@@ -19,11 +30,11 @@ brew install muster
 # or
 go install github.com/mlaccetti/muster/cmd/muster@latest
 
-muster install   # lay down kit under MUSTER_HOME
-muster link      # wire orchestrator + worker into detected harnesses (see docs/linking.md)
+muster install
+muster link
 ```
 
-After `brew upgrade muster`, run `muster install` and `muster link` again. The CLI checks GitHub once per day and nudges you when a newer release exists (see [docs/upgrades.md](docs/upgrades.md)).
+After `brew upgrade muster`, run `muster install` and `muster link` again.
 
 Developer setup:
 
@@ -32,22 +43,7 @@ mise trust && mise install
 just check
 ```
 
-## Quickstart (hermetic stubs)
-
-```bash
-export MUSTER_ADAPTER_ROOT="$(pwd)/testdata/stubs/bin"
-export MUSTER_STUB_DATA="$(pwd)/testdata/stubs/data"
-# copy testdata/stubs/cli to each name under bin/ (see internal/testutil)
-
-muster render brief --template implement --input testdata/briefs/minimal.json --out /tmp/brief.txt
-muster worker --harness claude --brief /tmp/brief.txt --report /tmp/report.json --sync
-```
-
-The worker prints a single **routing.v1** JSON line on stdout; the report is written to `--report`.
-
 ## Projections
-
-IDE-specific one-liners pointing at the installed kit:
 
 - [Claude Code](docs/projections/claude.md)
 - [Codex](docs/projections/codex.md)
@@ -59,34 +55,18 @@ IDE-specific one-liners pointing at the installed kit:
 | Variable | Purpose |
 |----------|---------|
 | `MUSTER_HOME` | Config root (default `$XDG_CONFIG_HOME/muster` or `~/.config/muster`) |
-| `MUSTER_ADAPTER_ROOT` | **Tests:** directory of stub harness binaries |
-| `MUSTER_STUB_DATA` | **Tests:** per-stub control files (routing, report fixtures) |
-| `MUSTER_TEST` | `1` enables synchronous worker defaults in tests |
-| `MUSTER_SKIP_PROBE` | `1` makes `muster doctor` skip real binary probe (CI) |
+| `MUSTER_SKIP_PROBE` | `1` makes `muster doctor` skip harness binary probe (CI) |
 
 ## Validation
 
-CI and local gate:
-
 ```bash
-just check   # gofumpt, golangci-lint, check-no-sleep, tests (race)
+just check
 ```
-
-No real `claude`, `codex`, `cursor-agent`, or `agy` binaries are invoked in tests or CI. Adapters use hermetic stubs under `testdata/stubs` when `MUSTER_ADAPTER_ROOT` is set.
-
-Test layers:
-
-- **Unit:** schema, render, pools, adapter stream classification, report normalize
-- **Service:** worker/dispatch/pass with stubs (`internal/service`, `internal/pass`)
-- **CLI in-process:** `internal/cli` via `RunForTest` (Cobra, no Fang)
-- **CLI E2E:** `cmd/muster/e2e_test.go` builds the binary and runs subprocesses with `StubEnv` (`PATH` trimmed, stub harness root only)
 
 ## Release
 
-Tag `v*` on `main` runs GoReleaser: GitHub release archives, the Go module at that tag (`go install github.com/mlaccetti/muster/cmd/muster@vX.Y.Z`), and the `muster` formula in [homebrew-tap](https://github.com/mlaccetti/homebrew-tap) (requires `HOMEBREW_TAP_GITHUB_TOKEN`). Release binaries stamp `muster --version` with the tag (e.g. `v0.1.0`).
-
-Preflight: `just release-dry`
+Tag `v*` on `main` runs GoReleaser and updates the Homebrew formula. Preflight: `just release-dry`.
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Copyright Michael Laccetti.
+MIT. See [LICENSE](LICENSE).

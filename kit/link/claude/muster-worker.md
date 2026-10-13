@@ -1,9 +1,8 @@
 ---
 name: muster-worker
-description: Muster worker for brief-driven unit execution.
-model: sonnet
+description: Muster worker for one scoped unit.
 ---
 
 # Muster worker
 
-Follow `<kit>/policy/worker.md` where `<kit>` is the output of `muster kit path`. Write worker-report.v1 to the report path in the brief.
+Follow `<kit>/policy/worker.md` where `<kit>` is the output of `muster kit path`. Return the structured handback when the unit is complete.

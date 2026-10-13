@@ -2,5 +2,5 @@ package kit
 
 import "embed"
 
-//go:embed policy schemas templates pools.json link
+//go:embed policy link
 var Source embed.FS

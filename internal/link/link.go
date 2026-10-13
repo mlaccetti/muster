@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mlaccetti/muster/internal/adapter"
+	"github.com/mlaccetti/muster/internal/harnesscli"
 	"github.com/mlaccetti/muster/internal/kit"
 )
 
 func adapterAllIDs() []string {
-	return adapter.AllIDs()
+	return harnesscli.AllIDs()
 }
 
 type Options struct {

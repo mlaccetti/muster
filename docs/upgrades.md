@@ -19,7 +19,7 @@ Skip the check in CI with `MUSTER_SKIP_UPDATE_CHECK=1`. `dev` builds never notif
 
 ## Kit on disk
 
-`muster install` writes `$MUSTER_HOME/kit/<version>/` and updates the `kit/current` symlink. **`pools.json`** is only created on first install (never overwritten). Old `kit/vX.Y.Z/` trees are kept for rollback.
+`muster install` writes `$MUSTER_HOME/kit/<version>/` and updates the `kit/current` symlink. Old `kit/vX.Y.Z/` trees are kept for rollback. Harness pools and dispatch live in **rckt-factory**, not muster.
 
 When the kit version changes, run **`muster link`** again so orchestrator/worker snippets pick up new absolute paths.
 

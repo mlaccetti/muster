@@ -1,36 +1,39 @@
 package main_test
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/mlaccetti/muster/internal/cli"
 	"github.com/mlaccetti/muster/internal/testutil"
 )
 
 func TestE2E_linkProjectNoRealHarness(t *testing.T) {
 	home := t.TempDir()
-	project := filepath.Join(home, "project")
-	if err := os.MkdirAll(project, 0o755); err != nil {
-		t.Fatal(err)
+	project := t.TempDir()
+	bin := t.TempDir()
+	for _, name := range []string{"claude", "codex", "cursor-agent", "agy"} {
+		_ = os.WriteFile(filepath.Join(bin, name), []byte("#!/bin/sh\nexit 0\n"), 0o755)
 	}
-	env := testutil.StubEnv(t, home, "/nonexistent/bin", "/nonexistent/data")
-	env = append(env,
-		"MUSTER_HOME="+filepath.Join(home, "muster"),
-		"HOME="+home,
-		"GOPATH="+filepath.Join(home, "gopath"),
-		"GOMODCACHE="+filepath.Join(home, "gomodcache"),
-		"GOCACHE="+filepath.Join(home, "gocache"),
-	)
+	for _, e := range testutil.StubEnv(t, home, bin, t.TempDir()) {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) == 2 {
+			t.Setenv(parts[0], parts[1])
+		}
+	}
+	t.Setenv("MUSTER_HOME", filepath.Join(home, "muster"))
 
-	_, _, code := runCLI(t, env, "install")
-	if code != 0 {
-		t.Fatalf("install exit %d", code)
+	var out bytes.Buffer
+	if cli.RunForTest([]string{"install"}, &out, &out) != 0 {
+		t.Fatalf("install: %s", out.String())
 	}
-	_, _, code = runCLI(t, env, "link", "--harness", "claude", "--project-dir", project, "--global=false")
-	if code != 0 {
-		t.Fatalf("link exit %d", code)
+	if cli.RunForTest([]string{
+		"link", "--harness", "claude", "--project-dir", project, "--global=false",
+	}, &out, &out) != 0 {
+		t.Fatalf("link: %s", out.String())
 	}
 	raw, err := os.ReadFile(filepath.Join(project, ".claude", "settings.json"))
 	if err != nil {
@@ -39,8 +42,7 @@ func TestE2E_linkProjectNoRealHarness(t *testing.T) {
 	if !strings.Contains(string(raw), "muster-orchestrator") {
 		t.Fatal(".claude/settings.json not linked")
 	}
-	_, _, code = runCLI(t, env, "doctor")
-	if code != 0 {
-		t.Fatalf("doctor exit %d", code)
+	if cli.RunForTest([]string{"doctor"}, &out, &out) != 0 {
+		t.Fatalf("doctor: %s", out.String())
 	}
 }

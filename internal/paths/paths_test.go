@@ -28,7 +28,7 @@ func TestHomeXDG(t *testing.T) {
 	}
 }
 
-func TestKitDirAndPoolsFile(t *testing.T) {
+func TestKitDir(t *testing.T) {
 	t.Setenv("MUSTER_HOME", "/m")
 	kit, err := KitDir()
 	if err != nil {
@@ -36,10 +36,6 @@ func TestKitDirAndPoolsFile(t *testing.T) {
 	}
 	if kit != filepath.Join("/m", "kit", KitVersion) {
 		t.Fatalf("KitDir %q", kit)
-	}
-	pools, err := PoolsFile()
-	if err != nil || pools != filepath.Join("/m", "pools.json") {
-		t.Fatalf("PoolsFile %q err=%v", pools, err)
 	}
 }
 
@@ -68,16 +64,5 @@ func TestKitCurrentSymlink(t *testing.T) {
 	}
 	if got != want {
 		t.Fatalf("KitDir %q want %q", got, want)
-	}
-}
-
-func TestPassDir(t *testing.T) {
-	t.Setenv("MUSTER_HOME", "/m")
-	dir, err := PassDir("pass-1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if dir != filepath.Join("/m", "passes", "pass-1") {
-		t.Fatalf("PassDir %q", dir)
 	}
 }

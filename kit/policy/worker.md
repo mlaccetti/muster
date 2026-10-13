@@ -1,8 +1,10 @@
 # Worker policy (muster kit)
 
-You execute one scoped unit. Do not sub-delegate. Produce a worker report block when finished.
+You execute **one scoped unit**. Do not sub-delegate. Stay within the paths and scope named in your brief.
 
-## Report block
+## Handback
+
+When finished, return a concise structured handback:
 
 ```json
 {
@@ -16,4 +18,4 @@ You execute one scoped unit. Do not sub-delegate. Produce a worker report block 
 }
 ```
 
-Evidence is required for non-trivial claims. Stay within `modifiable_paths`.
+Evidence is required for non-trivial claims. If the orchestrator or factory defines a different report schema for a run, follow that schema for factory-backed work; this block is the default for interactive worker subagents.

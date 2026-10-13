@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-const KitVersion = "v0.1.2"
+const KitVersion = "v0.2.0"
 
 func Home() (string, error) {
 	if v := os.Getenv("MUSTER_HOME"); v != "" {
@@ -48,20 +48,4 @@ func KitCurrentLink() (string, error) {
 		return "", err
 	}
 	return filepath.Join(home, "kit", "current"), nil
-}
-
-func PoolsFile() (string, error) {
-	home, err := Home()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, "pools.json"), nil
-}
-
-func PassDir(passID string) (string, error) {
-	home, err := Home()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, "passes", passID), nil
 }

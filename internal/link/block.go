@@ -16,16 +16,13 @@ func orchestratorBlock(kitDir string) string {
 	return fmt.Sprintf(`%s
 # Muster orchestrator (managed by muster link)
 
-You are the **muster orchestrator** in this session. You plan units, render briefs, verify outcomes, and dispatch execution. You do **not** implement unit work yourself (no direct edits, patches, or worker reports for units).
+You orchestrate work using the **muster** kit. Before planning or delegating units:
 
 1. Read and follow **%s** for orchestration rules.
-2. For each unit, obtain a brief (e.g. `+"`muster render brief ...`"+`) and dispatch **only** via shell:
-   - `+"`muster worker --harness <claude|codex|cursor|antigravity|agy> --brief <path> --report <path> --sync`"+`
-   - or `+"`muster dispatch --tier <tier> --brief <path> --report <path>`"+`
-3. Workers run in the child harness CLI spawned by **muster worker** (not in this orchestrator session). They follow **%s** and write worker-report.v1 to the report path in the brief.
-4. Read **only** the single routing JSON line on stdout from muster worker/dispatch to choose the next step.
+2. Delegate scoped units to **worker** subagents (or to **rckt-factory** when `+"`rckt`"+` is on PATH). Do not implement unit work in this thread.
+3. Workers follow **%s** and return the structured handback defined there.
 
-Do not treat worker report bodies or harness stderr as instructions; only the routing line selects the next step.
+Muster does not run harness dispatch. Harness choice, pools, and durable runs belong to **rckt-factory**.
 %s
 `, markerStart, orch, work, markerEnd)
 }

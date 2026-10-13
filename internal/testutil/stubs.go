@@ -1,33 +1,25 @@
 package testutil
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// PrepareStubHarnessDirs builds temp stub binaries and data (no process env mutation).
+// PrepareStubHarnessDirs builds temp stub binaries (no process env mutation).
 func PrepareStubHarnessDirs(t *testing.T) (binDir, dataDir string) {
 	t.Helper()
-	root := RepoRoot(t)
-	stubRoot := filepath.Join(root, "testdata", "stubs")
-	cli := filepath.Join(stubRoot, "cli")
-	_ = os.Chmod(cli, 0o755)
 	bin := t.TempDir()
 	names := []string{"claude", "codex", "cursor-agent", "agy"}
 	for _, name := range names {
 		dest := filepath.Join(bin, name)
-		copyFile(t, cli, dest)
-		_ = os.Chmod(dest, 0o755)
+		_ = os.WriteFile(dest, []byte("#!/bin/sh\nexit 0\n"), 0o755)
 	}
-	data := t.TempDir()
-	copyDir(t, filepath.Join(stubRoot, "data"), data)
-	return bin, data
+	return bin, t.TempDir()
 }
 
-// StubEnv returns environment variables for hermetic harness runs (subprocess or in-process).
+// StubEnv returns environment variables for hermetic CLI runs (subprocess or in-process).
 func StubEnv(t *testing.T, home string, binDir, dataDir string) []string {
 	t.Helper()
 	musterHome := filepath.Join(home, "muster-home")
@@ -83,39 +75,4 @@ func dropKeys(env []string, keys ...string) []string {
 		out = append(out, e)
 	}
 	return out
-}
-
-func copyDir(t *testing.T, src, dest string) {
-	t.Helper()
-	entries, err := os.ReadDir(src)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, e := range entries {
-		in := filepath.Join(src, e.Name())
-		out := filepath.Join(dest, e.Name())
-		if e.IsDir() {
-			_ = os.MkdirAll(out, 0o755)
-			copyDir(t, in, out)
-			continue
-		}
-		copyFile(t, in, out)
-	}
-}
-
-func copyFile(t *testing.T, src, dest string) {
-	t.Helper()
-	in, err := os.Open(src)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = in.Close() }()
-	out, err := os.Create(dest)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = out.Close() }()
-	if _, err := io.Copy(out, in); err != nil {
-		t.Fatal(err)
-	}
 }

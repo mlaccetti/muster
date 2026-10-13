@@ -7,13 +7,9 @@ import (
 	"testing"
 )
 
-func TestRepoRootAndPath(t *testing.T) {
+func TestRepoRoot(t *testing.T) {
 	root := RepoRoot(t)
 	if _, err := os.Stat(filepath.Join(root, "go.mod")); err != nil {
-		t.Fatal(err)
-	}
-	brief := Path(t, "testdata/briefs/minimal.json")
-	if _, err := os.Stat(brief); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -38,13 +34,5 @@ func TestStubEnvHermetic(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(bin, name)); err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
-	}
-}
-
-func TestLastRoutingLine(t *testing.T) {
-	out := "noise\n{\"verdict\":\"ok\",\"harness\":\"claude\",\"family\":\"anthropic\",\"model\":\"\",\"report\":\"/r.json\",\"reason_code\":\"none\",\"reset\":0}\n"
-	line := LastRoutingLine(t, out)
-	if line.Verdict != "ok" || line.Harness == nil || *line.Harness != "claude" {
-		t.Fatalf("line %+v", line)
 	}
 }

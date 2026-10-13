@@ -3,4 +3,6 @@ description: Muster worker policy reference
 alwaysApply: false
 ---
 
-Workers follow `<kit>/policy/worker.md` (`muster kit path`) and write worker-report.v1 to the report path in the brief.
+# Muster worker
+
+Read `<kit>/policy/worker.md` from `muster kit path`. Return the structured handback when the unit is complete.

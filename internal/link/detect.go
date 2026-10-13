@@ -3,19 +3,15 @@ package link
 import (
 	"os"
 
-	"github.com/mlaccetti/muster/internal/adapter"
+	"github.com/mlaccetti/muster/internal/harnesscli"
 )
 
 // DetectInstalled returns harness IDs resolvable on PATH (ignores MUSTER_ADAPTER_ROOT).
 func DetectInstalled() ([]string, error) {
 	_ = os.Unsetenv("MUSTER_ADAPTER_ROOT")
 	var out []string
-	for _, id := range adapter.AllIDs() {
-		a, err := adapter.Get(id)
-		if err != nil {
-			continue
-		}
-		if _, _, err := a.ResolveCLI(); err == nil {
+	for _, id := range harnesscli.AllIDs() {
+		if _, err := harnesscli.ResolveBinary(id); err == nil {
 			out = append(out, id)
 		}
 	}
@@ -28,7 +24,7 @@ func normalizeHarnessList(requested []string) ([]string, error) {
 	}
 	out := make([]string, 0, len(requested))
 	for _, h := range requested {
-		id, err := adapter.NormalizeHarnessID(h)
+		id, err := harnesscli.NormalizeHarnessID(h)
 		if err != nil {
 			return nil, err
 		}
