@@ -13,21 +13,25 @@ func claudeGlobalDir() (string, error) {
 	return filepath.Join(home, ".claude"), nil
 }
 
+func claudeProjectDir(projectDir string) string {
+	return filepath.Join(projectDir, ".claude")
+}
+
 func linkClaudeGlobal(kitDir string, dryRun bool) ([]string, error) {
 	dir, err := claudeGlobalDir()
 	if err != nil {
 		return nil, err
 	}
-	target := filepath.Join(dir, "CLAUDE.md")
-	block := orchestratorBlock(kitDir)
-	if err := patchFile(target, func(s string) string { return upsertManagedBlock(s, block) }, dryRun); err != nil {
+	touched, err := linkClaudeAgentWiring(dir, kitDir, dryRun)
+	if err != nil {
 		return nil, err
 	}
-	worker := filepath.Join(dir, "muster-worker.md")
-	if err := writeFile(worker, workerBlock(kitDir), dryRun); err != nil {
-		return nil, err
+	if !dryRun {
+		_ = os.Remove(filepath.Join(dir, "muster-worker.md"))
+		legacy := filepath.Join(dir, "CLAUDE.md")
+		_ = patchFile(legacy, removeManagedBlock, false)
 	}
-	return []string{target, worker}, nil
+	return touched, nil
 }
 
 func unlinkClaudeGlobal(dryRun bool) error {
@@ -35,27 +39,19 @@ func unlinkClaudeGlobal(dryRun bool) error {
 	if err != nil {
 		return err
 	}
-	target := filepath.Join(dir, "CLAUDE.md")
-	if err := patchFile(target, removeManagedBlock, dryRun); err != nil {
+	if err := unlinkClaudeAgentWiring(dir, dryRun); err != nil {
 		return err
 	}
 	if !dryRun {
 		_ = os.Remove(filepath.Join(dir, "muster-worker.md"))
+		legacy := filepath.Join(dir, "CLAUDE.md")
+		_ = patchFile(legacy, removeManagedBlock, false)
 	}
 	return nil
 }
 
 func linkClaudeProject(projectDir, kitDir string, dryRun bool) ([]string, error) {
-	target := filepath.Join(projectDir, "CLAUDE.md")
-	block := orchestratorBlock(kitDir)
-	if err := patchFile(target, func(s string) string { return upsertManagedBlock(s, block) }, dryRun); err != nil {
-		return nil, err
-	}
-	worker := filepath.Join(projectDir, ".muster", "claude-worker.md")
-	if err := writeFile(worker, workerBlock(kitDir), dryRun); err != nil {
-		return nil, err
-	}
-	return []string{target, worker}, nil
+	return linkClaudeAgentWiring(claudeProjectDir(projectDir), kitDir, dryRun)
 }
 
 func unlinkClaudeProject(projectDir string, dryRun bool) error {
@@ -66,5 +62,5 @@ func unlinkClaudeProject(projectDir string, dryRun bool) error {
 	if !dryRun {
 		_ = os.Remove(filepath.Join(projectDir, ".muster", "claude-worker.md"))
 	}
-	return nil
+	return unlinkClaudeAgentWiring(claudeProjectDir(projectDir), dryRun)
 }

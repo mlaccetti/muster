@@ -70,16 +70,6 @@ func (h harnessWiring) unlinkProject(projectDir string, dryRun bool) error {
 	}
 }
 
-func writeFile(path string, content string, dryRun bool) error {
-	if dryRun {
-		return nil
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(path, []byte(content), 0o644)
-}
-
 func patchFile(path string, mutate func(string) string, dryRun bool) error {
 	if dryRun {
 		return nil

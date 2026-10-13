@@ -57,6 +57,16 @@ just check
 | `MUSTER_HOME` | Config root (default `$XDG_CONFIG_HOME/muster` or `~/.config/muster`) |
 | `MUSTER_SKIP_PROBE` | `1` makes `muster doctor` skip harness binary probe (CI) |
 
+## Validation
+
+```bash
+just check
+```
+
+## Release
+
+Tag `v*` on `main` runs GoReleaser and updates the Homebrew formula. Preflight: `just release-dry`.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

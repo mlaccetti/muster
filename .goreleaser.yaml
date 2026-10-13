@@ -2,6 +2,9 @@ version: 2
 
 project_name: muster
 
+gomod:
+  proxy: true
+
 before:
   hooks:
     - go mod tidy
@@ -21,9 +24,9 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.Date}}
+      - -X github.com/mlaccetti/muster/internal/buildversion.version={{.Tag}}
+      - -X github.com/mlaccetti/muster/internal/buildversion.commit={{.Commit}}
+      - -X github.com/mlaccetti/muster/internal/buildversion.date={{.Date}}
 
 archives:
   - formats: [tar.gz]

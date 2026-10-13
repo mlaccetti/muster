@@ -35,12 +35,12 @@ func TestE2E_linkProjectNoRealHarness(t *testing.T) {
 	}, &out, &out) != 0 {
 		t.Fatalf("link: %s", out.String())
 	}
-	raw, err := os.ReadFile(filepath.Join(project, "CLAUDE.md"))
+	raw, err := os.ReadFile(filepath.Join(project, ".claude", "settings.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(raw), "MUSTER_LINK_START") {
-		t.Fatal("CLAUDE.md not linked")
+	if !strings.Contains(string(raw), "muster-orchestrator") {
+		t.Fatal(".claude/settings.json not linked")
 	}
 	if cli.RunForTest([]string{"doctor"}, &out, &out) != 0 {
 		t.Fatalf("doctor: %s", out.String())

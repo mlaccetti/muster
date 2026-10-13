@@ -33,6 +33,9 @@ func newDoctorCmd() *cobra.Command {
 				if staleKitLink(m.KitDir, dir) {
 					writef(cmd.ErrOrStderr(), "link: stale kit paths in harness snippets (manifest %s, active %s); run muster link\n", m.KitDir, dir)
 				}
+				for _, issue := range link.VerifyReports(m) {
+					writef(cmd.ErrOrStderr(), "link: %s\n", issue)
+				}
 			} else {
 				writef(cmd.ErrOrStderr(), "link: not configured (run muster link)\n")
 			}

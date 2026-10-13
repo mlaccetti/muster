@@ -1,6 +1,6 @@
 # Linking harnesses
 
-`muster install` lays down the kit. **`muster link`** wires the same orchestrator and worker policies into each harness so behavior stays consistent.
+`muster install` lays down the versioned **kit** (policy, schemas, `link/` harness entrypoints). **`muster link`** symlinks those entrypoints into each harness and sets the **default orchestrator** selector. No prose is copied into `AGENTS.md` or harness markdown.
 
 ## Behavior
 
@@ -9,23 +9,74 @@
 | Auto-detect | yes (`muster link`) | Links only harnesses whose CLIs are on `PATH` (`claude`, `codex`, `cursor-agent`, `agy`) |
 | `--harness` | optional | Link specific IDs even if not on `PATH` |
 | `--all` | off | Link all four supported harnesses |
-| `--global` | on | User config (`~/.claude`, `~/.codex`, `~/.cursor/rules`, `~/.antigravity`) |
-| `--project` | on | Repo config (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules`, `.muster/`) |
+| `--global` | on | User-level harness config |
+| `--project` | on | Repo-level harness config + `.muster/` pointers |
 | `--project-dir` | cwd | Repo root to link |
+| `--unlink` | off | Remove symlinks, config patches, and shims |
 
-Managed blocks are delimited with `<!-- MUSTER_LINK_START -->` / `<!-- MUSTER_LINK_END -->` so re-running `muster link` updates in place. `muster link --unlink` removes them.
+State is recorded in `$MUSTER_HOME/link-manifest.json`. `muster doctor` reports link status and runs **`link.VerifyReports`** on each linked harness.
 
-## Per harness
+## Per harness (global)
 
-| ID | Global | Project |
-|----|--------|---------|
-| `claude` | `~/.claude/CLAUDE.md` + `muster-worker.md` | `CLAUDE.md` + `.muster/claude-worker.md` |
-| `codex` | `~/.codex/AGENTS.md` + `muster-worker.md` | `AGENTS.md` + `.muster/codex-worker.md` |
-| `cursor` | `~/.cursor/rules/muster-*.mdc` | `.cursor/rules/muster-orchestrator.mdc` |
-| `antigravity` | `~/.antigravity/muster-*.md` | `.muster/antigravity/` |
+| ID | Default orchestrator | Definitions (symlinks into `$KIT/link/...`) |
+|----|----------------------|---------------------------------------------|
+| `claude` | `~/.claude/settings.json` → `"agent": "muster-orchestrator"` | `~/.claude/agents/muster-orchestrator.md`, `muster-worker.md` |
+| `codex` | `~/.codex/config.toml` managed block: `model_instructions_file` + `developer_instructions` (every `codex` run). Profile: `codex -p muster-orchestrator` | `~/.codex/muster-orchestrator.config.toml`, `muster-worker.config.toml`; `[agents.muster-worker]` in `config.toml` |
+| `cursor` | `~/.cursor/rules/muster-orchestrator.mdc` with `alwaysApply: true` | `muster-orchestrator.mdc`, `muster-worker.mdc` |
+| `antigravity` (`agy`) | `~/.gemini/antigravity-cli/settings.json` → `"agent": "muster-orchestrator"` | `~/.gemini/config/agents/muster-orchestrator/agent.md`, `muster-worker/agent.md` |
 
-State is recorded in `$MUSTER_HOME/link-manifest.json`. `muster doctor` reports link status.
+Project linking adds `.claude/`, `.codex/`, `.cursor/rules/`, or `.agents/agents/` equivalents under the repo.
+
+## Optional shims
+
+After link, `$MUSTER_HOME/bin/` contains:
+
+- **`codex-muster`**: `codex -p muster-orchestrator "$@"`
+- **`agy-muster`**: `agy --agent muster-orchestrator "$@"`
+
+Add `$MUSTER_HOME/bin` to `PATH` if you want those names instead of the stock CLIs.
+
+## Validation
+
+```bash
+muster install
+muster link --all
+muster doctor          # link.VerifyReports on manifest harnesses
+muster doctor --probe  # harness binaries on PATH
+```
+
+**Claude**
+
+```bash
+jq -r '.agent' ~/.claude/settings.json
+readlink ~/.claude/agents/muster-orchestrator.md
+```
+
+**Codex**
+
+```bash
+rg MUSTER_LINK_BEGIN ~/.codex/config.toml
+readlink ~/.codex/muster-orchestrator.config.toml
+codex -p muster-orchestrator -h   # profile recognized
+```
+
+**cursor-agent**
+
+```bash
+test -f ~/.cursor/rules/muster-orchestrator.mdc
+cursor-agent -p --print "List always-applied rules that mention muster or muster kit path"
+```
+
+**agy**
+
+```bash
+agy agents | rg muster
+jq -r '.agent' ~/.gemini/antigravity-cli/settings.json
+agy -p "Reply with your agent name only" --agent muster-orchestrator
+```
+
+Re-run **`muster link`** after `muster install` upgrades the kit so symlinks target the active kit tree.
 
 ## Testing without real harnesses
 
-CI uses `muster link --harness claude --project <dir> --global=false` (no `PATH` probe). E2E subprocess tests can do the same after `muster install` in a temp `MUSTER_HOME`.
+CI uses `muster link --harness claude --project <dir> --global=false`. Package tests cover codex/cursor/agy global link with temp `HOME` and `CODEX_HOME`.

@@ -1,0 +1,8 @@
+---
+description: Muster worker policy reference
+alwaysApply: false
+---
+
+# Muster worker
+
+Read `<kit>/policy/worker.md` from `muster kit path`. Return the structured handback when the unit is complete.
