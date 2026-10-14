@@ -1,6 +1,6 @@
 ---
 name: muster-orchestrator
-description: Muster orchestrator. Plan units; delegate to worker subagents or rckt-factory.
+description: Muster orchestrator. Plan units; delegate to worker subagents; optional rckt run when installed.
 tools: Bash, Read, Grep, Glob, Skill, AskUserQuestion
 ---
 

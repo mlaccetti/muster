@@ -1,6 +1,6 @@
 ---
 name: muster-orchestrator
-description: Muster orchestrator. Delegate to workers or rckt-factory.
+description: Muster orchestrator. Delegate to workers; optional rckt run when installed.
 ---
 
 # Muster orchestrator

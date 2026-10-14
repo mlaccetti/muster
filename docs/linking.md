@@ -77,6 +77,10 @@ agy -p "Reply with your agent name only" --agent muster-orchestrator
 
 Re-run **`muster link`** after `muster install` upgrades the kit so symlinks target the active kit tree.
 
+## Optional durable runs (rckt-factory)
+
+muster does not require **rckt-factory**. Linked orchestrator policy tells the main session to delegate units to **worker** subagents in the harness. If the operator has installed factory and `rckt` is on `PATH`, the same policy allows `rckt run …` for durable delivery instead of only in-chat delegation.
+
 ## Testing without real harnesses
 
 CI uses `muster link --harness claude --project <dir> --global=false`. Package tests cover codex/cursor/agy global link with temp `HOME` and `CODEX_HOME`.

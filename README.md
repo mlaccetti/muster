@@ -2,24 +2,26 @@
 
 *Same orchestrator and worker behavior in every coding harness.*
 
-**muster** installs a small, versioned **policy kit** and **links** it into Claude Code, Codex, Cursor Agent, and Antigravity (`agy`). It does not dispatch harnesses, run delivery graphs, or replace **rckt-factory**.
+**muster** is **standalone**: it installs a small, versioned **policy kit** and **links** it into Claude Code, Codex, Cursor Agent, and Antigravity (`agy`). You do not need **rckt-factory** or any other rckt repo to use it.
+
+Orchestrators plan work and delegate to **worker** subagents inside the harness. When the operator has installed **rckt-factory** and `rckt` is on `PATH`, they may optionally start durable delivery with `rckt run …` instead of re-implementing delivery graphs in chat.
 
 ## What muster does
 
 - **`muster install`**: copy the kit to `MUSTER_HOME` (orchestrator + worker policy).
-- **`muster link`**: inject managed snippets so the main session acts as **orchestrator** (plan, delegate, verify) and **worker** subagents stay scoped.
+- **`muster link`**: wire harness entrypoints so the main session acts as **orchestrator** (plan, delegate, verify) and **worker** subagents stay scoped.
 - **`muster doctor`**: kit on disk, link manifest, optional harness CLI probe.
 
 ## What muster does not do
 
-- No `muster worker`, pools, brief rendering, or pass runner. **rckt-factory** owns harness adapters, tier pools, quota/capacity, and durable runs (`rckt` / `rcktd`).
-- No skills or planning content. **rckt-skills** owns brainstorm/plan skills; factory consumes approved plans when you run delivery.
+- No harness subprocess dispatch, tier pools, brief rendering, or pass runner in this repo. Those concerns live in **[rckt-factory](https://github.com/mlaccetti/rckt-factory)** when you choose to install it (optional).
+- No skills or planning content. **[rckt-skills](https://github.com/rckt-corp/rckt-skills)** is optional for brainstorm/plan skills.
 
-## Related projects
+## Related projects (optional composition)
 
-- **[rckt-factory](https://github.com/mlaccetti/rckt-factory)**: execution, harness selection, delivery workflows.
-- **[rckt-skills](https://github.com/rckt-corp/rckt-skills)**: planning and decomposition skills (optional).
-- **[harness-bridge](https://github.com/mlaccetti/harness-bridge)**: move conversation context between CLIs (optional).
+- **[rckt-factory](https://github.com/mlaccetti/rckt-factory)** *(optional)*: durable runs, harness selection, delivery workflows (`rckt` / `rcktd`). Use `rckt run` only when this CLI is installed.
+- **[rckt-skills](https://github.com/rckt-corp/rckt-skills)** *(optional)*: planning and decomposition skills.
+- **[harness-bridge](https://github.com/mlaccetti/harness-bridge)** *(optional)*: move conversation context between CLIs.
 
 ## Install
 
