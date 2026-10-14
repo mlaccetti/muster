@@ -12,5 +12,3 @@ readlink ~/.claude/agents/muster-orchestrator.md
 ```
 
 Orchestrator delegates units to **worker** subagents per `$KIT/policy/worker.md`.
-
-**Optional:** when `rckt` is on `PATH`, orchestrator policy allows `rckt run …` for durable delivery (rckt-factory).

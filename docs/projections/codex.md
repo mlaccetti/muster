@@ -11,4 +11,3 @@ readlink ~/.codex/muster-orchestrator.config.toml
 
 Workers follow `$KIT/policy/worker.md` when invoked as the muster-worker agent profile.
 
-**Optional:** when `rckt` is on `PATH`, use `rckt run …` for durable delivery (rckt-factory).

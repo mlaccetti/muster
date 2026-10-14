@@ -10,4 +10,3 @@ test -f ~/.cursor/rules/muster-orchestrator.mdc
 
 Binary resolved as `cursor-agent`. Delegate units to worker subagents per kit policy.
 
-**Optional:** when `rckt` is on `PATH`, orchestrator policy allows `rckt run …` (rckt-factory).

@@ -18,4 +18,4 @@ When finished, return a concise structured handback:
 }
 ```
 
-Evidence is required for non-trivial claims. If the orchestrator started factory-backed work via `rckt run`, follow the report schema that run defines; the JSON block above is the default for interactive worker subagents in muster-linked harnesses.
+Evidence is required for non-trivial claims.

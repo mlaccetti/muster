@@ -20,10 +20,7 @@ You orchestrate work using the **muster** kit. Before planning or delegating uni
 
 1. Read and follow **%s** for orchestration rules.
 2. Delegate scoped units to **worker** subagents. Do not implement unit work in this thread.
-3. **Optional:** when `+"`rckt`"+` is on PATH, you may start durable delivery with `+"`rckt run`"+` (rckt-factory); factory is not required for muster.
-4. Workers follow **%s** and return the structured handback defined there.
-
-Muster works standalone. Harness dispatch, pools, and durable runs are available only when rckt-factory is installed.
+3. Workers follow **%s** and return the structured handback defined there.
 %s
 `, markerStart, orch, work, markerEnd)
 }

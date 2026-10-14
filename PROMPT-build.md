@@ -2,11 +2,7 @@
 
 Use this document as the **single source of truth** for **muster**: a public Go CLI and installable **kit** (orchestrator + worker policy, harness link entrypoints) that gives the same orchestration behavior across coding agents **without** tying sessions to one vendor.
 
-**muster works standalone.** Operators need only `muster install` and `muster link`. **rckt-factory is optional:** when `rckt` is on `PATH`, orchestrator policy may use `rckt run …` for durable delivery; muster must not require factory to install or run.
-
-**This repo is not [harness-bridge](https://github.com/mlaccetti/harness-bridge).** harness-bridge moves conversation context between CLIs. Link it in README as an optional related project.
-
-**This repo is not rckt-factory.** Do not implement factory backlog, charter, pools, harness subprocess dispatch, brief rendering, or pass runners here.
+Operators need only `muster install` and `muster link`.
 
 **Upstream:** `github.com/mlaccetti/muster` (public).  
 **Homebrew:** `github.com/mlaccetti/homebrew-tap` (formula `muster`).  
@@ -28,7 +24,7 @@ Use this document as the **single source of truth** for **muster**: a public Go 
 Deliver in one installable unit:
 
 1. **Kit (data):** Versioned `kit/policy/orchestrator.md`, `kit/policy/worker.md`, and `kit/link/*` harness entrypoints (embedded, versioned).
-2. **CLI (code):** `muster install`, `muster link`, `muster doctor`, `muster kit path`. No worker, dispatch, or pass subcommands in this repo.
+2. **CLI (code):** `muster install`, `muster link`, `muster doctor`, `muster kit path`.
 3. **Docs:** Architecture, linking, upgrades, and short per-harness projections under `docs/projections/`.
 
 **Supported harness IDs** (closed set):
@@ -49,28 +45,26 @@ Deliver in one installable unit:
 
 ---
 
-## Non-goals
+## Non-goals (this repo)
 
-- Do **not** require **rckt-factory**, **rckt-skills**, or harness-bridge.
-- Do **not** ship `muster worker`, `muster dispatch`, `muster pass`, adapters, `pools.json`, or JSON Schema brief/routing pipelines in this repo (defer to factory or future work).
-- Do **not** call real `claude` / `codex` / `cursor-agent` / `agy` in CI or default tests.
-- Do **not** use `time.Sleep` in production code; gate with `scripts/check-no-sleep.sh`.
+- No `muster worker`, `muster dispatch`, or `muster pass` subcommands.
+- No harness subprocess dispatch, tier pools, brief rendering, or pass runners in this codebase.
+- No calls to real `claude` / `codex` / `cursor-agent` / `agy` in CI or default tests.
+- No `time.Sleep` in production code; gate with `scripts/check-no-sleep.sh`.
 
 ---
 
 ## Architecture
 
 ```text
-┌────────────────────────────────────────────────────────────┐
-│  Optional: rckt-factory (rckt run) when rckt on PATH      │
-├────────────────────────────────────────────────────────────┤
-│  muster CLI: install, link, doctor, kit                     │
-├────────────────────────────────────────────────────────────┤
-│  Kit: policy + kit/link harness entrypoints (embedded)      │
-└────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│  muster CLI: install, link, doctor, kit   │
+├────────────────────────────────────────────┤
+│  Kit: policy + kit/link harness entrypoints │
+└────────────────────────────────────────────┘
 ```
 
-Orchestrator policy: plan units, delegate to **worker** subagents in the harness, verify evidence. Optionally mention `rckt run` when factory is installed. Never treat factory as a hard dependency.
+Orchestrator policy: plan units, delegate to **worker** subagents in the harness, verify evidence.
 
 See [docs/architecture.md](docs/architecture.md) and [docs/linking.md](docs/linking.md).
 
@@ -85,8 +79,6 @@ See [docs/architecture.md](docs/architecture.md) and [docs/linking.md](docs/link
 | `muster unlink` | Remove link artifacts |
 | `muster doctor` | Kit path, link manifest, `link.VerifyReports`, optional `--probe` |
 | `muster kit path` | Print active kit directory |
-
-Root `Long` help must state standalone operation and optional factory.
 
 ---
 
@@ -119,10 +111,9 @@ Legacy managed markdown blocks (`internal/link/block.go`) remain for upsert help
 
 ## README requirements
 
-1. Standalone mission; optional composition with factory, skills, harness-bridge.
-2. Install: Homebrew, `go install`, `muster install`, `muster link`.
-3. Projections section.
-4. Environment table, `just check`, MIT license.
+1. Mission and install (`brew`, `go install`, `muster install`, `muster link`).
+2. Projections section.
+3. Environment table, `just check`, MIT license.
 
 ---
 
@@ -130,8 +121,7 @@ Legacy managed markdown blocks (`internal/link/block.go`) remain for upsert help
 
 - [ ] `just check` green without real harness binaries.
 - [ ] `muster install` + `muster link` + `muster doctor` work in tests.
-- [ ] Docs and kit policy never imply factory is required.
-- [ ] Orchestrator link prompts delegate to workers first; `rckt run` only when installed.
+- [ ] Orchestrator link prompts delegate to workers; kit policy matches docs.
 
 ---
 
@@ -141,5 +131,5 @@ Legacy managed markdown blocks (`internal/link/block.go`) remain for upsert help
 Implement or maintain **muster** per PROMPT-build.md.
 
 Module: github.com/mlaccetti/muster. CLI: Cobra (+ Fang/Carapace as in repo).
-Hard constraints: standalone muster; optional rckt-factory; no worker/dispatch/pass in this repo; no real harness binaries in CI.
+Hard constraints: install/link kit only; no worker/dispatch/pass subcommands; no real harness binaries in CI.
 ```

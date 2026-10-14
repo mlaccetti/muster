@@ -11,4 +11,3 @@ jq -r '.agent' ~/.gemini/antigravity-cli/settings.json
 
 CLI binary `agy` (harness id `antigravity`). Delegate units to worker subagents per kit policy.
 
-**Optional:** when `rckt` is on `PATH`, use `rckt run …` for durable delivery (rckt-factory).
