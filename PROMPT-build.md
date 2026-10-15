@@ -89,9 +89,9 @@ See [docs/architecture.md](docs/architecture.md) and [docs/linking.md](docs/link
 
 ## Linking
 
-- Auto-detect harnesses on `PATH`; flags `--harness`, `--all`, `--global`, `--project`, `--unlink`.
+- Auto-detect harnesses on `PATH`; flags `--harness`, `--all`, `--unlink`. Linking always targets harness-wide user configuration and never writes in the current repository.
 - Record state in `$MUSTER_HOME/link-manifest.json`.
-- Codex: native `AGENTS.md` instructions + custom worker agent; Claude/Agy: settings JSON agent selector; Cursor: always-applied project rule (global User Rules remain a Settings-only step).
+- Codex: native global `AGENTS.md` instructions + custom worker agent; Claude/Agy: settings JSON agent selector; Cursor: global User Rules require manual setup in Cursor Settings because there is no supported CLI or file interface.
 - Optional Antigravity shim: `agy-muster` under `$MUSTER_HOME/bin`.
 
 Legacy managed markdown blocks (`internal/link/block.go`) remain for upsert helpers/tests; primary delivery is symlinks + kit/link prompts.

@@ -25,21 +25,6 @@ func (h harnessWiring) linkGlobal(kitDir string, dryRun bool) ([]string, error) 
 	}
 }
 
-func (h harnessWiring) linkProject(projectDir, kitDir string, dryRun bool) ([]string, error) {
-	switch h.id {
-	case "claude":
-		return linkClaudeProject(projectDir, kitDir, dryRun)
-	case "codex":
-		return linkCodexProject(projectDir, kitDir, dryRun)
-	case "cursor":
-		return linkCursorProject(projectDir, kitDir, dryRun)
-	case "antigravity":
-		return linkAntigravityProject(projectDir, kitDir, dryRun)
-	default:
-		return nil, fmt.Errorf("unknown harness %q", h.id)
-	}
-}
-
 func (h harnessWiring) unlinkGlobal(dryRun bool) error {
 	switch h.id {
 	case "claude":
@@ -50,21 +35,6 @@ func (h harnessWiring) unlinkGlobal(dryRun bool) error {
 		return unlinkCursorGlobal(dryRun)
 	case "antigravity":
 		return unlinkAntigravityGlobal(dryRun)
-	default:
-		return fmt.Errorf("unknown harness %q", h.id)
-	}
-}
-
-func (h harnessWiring) unlinkProject(projectDir string, dryRun bool) error {
-	switch h.id {
-	case "claude":
-		return unlinkClaudeProject(projectDir, dryRun)
-	case "codex":
-		return unlinkCodexProject(projectDir, dryRun)
-	case "cursor":
-		return unlinkCursorProject(projectDir, dryRun)
-	case "antigravity":
-		return unlinkAntigravityProject(projectDir, dryRun)
 	default:
 		return fmt.Errorf("unknown harness %q", h.id)
 	}

@@ -11,7 +11,7 @@ import (
 	"github.com/mlaccetti/muster/internal/testutil"
 )
 
-func TestE2E_linkProjectNoRealHarness(t *testing.T) {
+func TestE2E_linkHarnessWideNoRealHarness(t *testing.T) {
 	home := t.TempDir()
 	project := t.TempDir()
 	bin := t.TempDir()
@@ -31,16 +31,21 @@ func TestE2E_linkProjectNoRealHarness(t *testing.T) {
 		t.Fatalf("install: %s", out.String())
 	}
 	if cli.RunForTest([]string{
-		"link", "--harness", "claude", "--project-dir", project, "--global=false",
+		"link", "--harness", "claude",
 	}, &out, &out) != 0 {
 		t.Fatalf("link: %s", out.String())
 	}
-	raw, err := os.ReadFile(filepath.Join(project, ".claude", "settings.json"))
+	raw, err := os.ReadFile(filepath.Join(home, ".claude", "settings.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(raw), "muster-orchestrator") {
-		t.Fatal(".claude/settings.json not linked")
+		t.Fatal("harness-wide .claude/settings.json not linked")
+	}
+	for _, path := range []string{"AGENTS.md", ".muster", ".claude", ".codex", ".cursor", ".agents"} {
+		if _, err := os.Lstat(filepath.Join(project, path)); !os.IsNotExist(err) {
+			t.Fatalf("link wrote project path %s (err=%v)", path, err)
+		}
 	}
 	if cli.RunForTest([]string{"doctor"}, &out, &out) != 0 {
 		t.Fatalf("doctor: %s", out.String())

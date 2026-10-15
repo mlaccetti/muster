@@ -15,7 +15,6 @@ type Manifest struct {
 	Version   int           `json:"version"`
 	UpdatedAt string        `json:"updated_at"`
 	KitDir    string        `json:"kit_dir"`
-	Project   string        `json:"project,omitempty"`
 	Harnesses []HarnessLink `json:"harnesses"`
 }
 
