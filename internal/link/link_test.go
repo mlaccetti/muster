@@ -81,30 +81,25 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	codexProfile := filepath.Join(home, ".codex", codexProfileName+".config.toml")
-	if target, err := filepath.EvalSymlinks(codexProfile); err != nil || target != filepath.Join(kitDir, "link", "codex", codexProfileName+".config.toml") {
-		t.Fatalf("codex profile: %v %s", err, target)
+	codexWorker := filepath.Join(home, ".codex", "agents", workerAgentName+".toml")
+	if target, err := filepath.EvalSymlinks(codexWorker); err != nil || target != filepath.Join(kitDir, "link", "codex", workerAgentName+".config.toml") {
+		t.Fatalf("codex worker agent: %v %s", err, target)
 	}
 	workerConfig, err := os.ReadFile(filepath.Join(kitDir, "link", "codex", workerAgentName+".config.toml"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, required := range []string{`model = "gpt-6-luna"`, `model_reasoning_effort = "medium"`} {
+	for _, required := range []string{`name = "muster-worker"`, `model = "gpt-6-luna"`, `model_reasoning_effort = "medium"`, `developer_instructions = """`} {
 		if !strings.Contains(string(workerConfig), required) {
 			t.Errorf("Codex worker config missing %q: %s", required, workerConfig)
 		}
 	}
-	cfg, err := os.ReadFile(filepath.Join(home, ".codex", "config.toml"))
-	if err != nil || !strings.Contains(string(cfg), tomlMarkerBegin) {
-		t.Fatalf("codex config: %v %s", err, cfg)
+	globalAgents, err := os.ReadFile(filepath.Join(home, ".codex", "AGENTS.md"))
+	if err != nil || !strings.Contains(string(globalAgents), markerStart) {
+		t.Fatalf("codex global instructions: %v %s", err, globalAgents)
 	}
-	cursorRule := filepath.Join(home, ".cursor", "rules", "muster-orchestrator.mdc")
-	cursorTarget, err := filepath.EvalSymlinks(cursorRule)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cursorTarget != filepath.Join(kitDir, "link", "cursor", "muster-orchestrator.mdc") {
-		t.Fatalf("cursor rule: %s", cursorTarget)
+	if _, err := os.Stat(filepath.Join(home, ".cursor", "rules", "muster-orchestrator.mdc")); !os.IsNotExist(err) {
+		t.Fatalf("Cursor global rules are not a supported filesystem target; got err %v", err)
 	}
 	agyAgent := filepath.Join(home, ".gemini", "config", "agents", orchestratorAgentName, "agent.md")
 	if _, err := os.Stat(agyAgent); err != nil {
@@ -113,6 +108,43 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	agySettings := filepath.Join(home, ".gemini", "antigravity-cli", "settings.json")
 	if _, err := os.Stat(agySettings); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestLinkProjectCodexCursorDefaultInstructions(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
+	t.Setenv("MUSTER_HOME", filepath.Join(home, "muster"))
+	project := t.TempDir()
+	if err := os.WriteFile(filepath.Join(project, "AGENTS.md"), []byte("# Existing project guidance\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	kitDir, err := kit.Install()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Run(Options{ProjectDir: project, Harnesses: []string{"codex", "cursor"}, Global: false, Project: true}); err != nil {
+		t.Fatal(err)
+	}
+	projectInstructions, err := os.ReadFile(filepath.Join(project, "AGENTS.md"))
+	if err != nil || !strings.Contains(string(projectInstructions), markerStart) || !strings.Contains(string(projectInstructions), "Existing project guidance") {
+		t.Fatalf("project instructions did not preserve and add managed block: %v %s", err, projectInstructions)
+	}
+	workerAgent := filepath.Join(project, ".codex", "agents", workerAgentName+".toml")
+	if target, err := filepath.EvalSymlinks(workerAgent); err != nil || target != filepath.Join(kitDir, "link", "codex", workerAgentName+".config.toml") {
+		t.Fatalf("project worker agent: %v %s", err, target)
+	}
+	cursorRule := filepath.Join(project, ".cursor", "rules", "muster-orchestrator.mdc")
+	if target, err := filepath.EvalSymlinks(cursorRule); err != nil || target != filepath.Join(kitDir, "link", "cursor", "muster-orchestrator.mdc") {
+		t.Fatalf("project Cursor rule: %v %s", err, target)
+	}
+	manifest, err := LoadManifest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if issues := VerifyReports(manifest); len(issues) != 0 {
+		t.Fatalf("linked Codex and Cursor project wiring failed verification: %v", issues)
 	}
 }
 

@@ -5,4 +5,4 @@ alwaysApply: false
 
 # Muster worker
 
-Read `<kit>/policy/worker.md` from `muster kit path`. Do only the assigned task and return a concise conversational summary of changes, checks, observed results, and relevant blockers or unfinished work. No fixed response format is required.
+Do only the assigned bounded task. Preserve unrelated work, surface unclear or conflicting scope before expanding it, and do not sub-delegate or take on adjacent tasks. Do not commit, push, queue or merge pull requests, or publish releases unless explicitly assigned. Report relevant checks with exact commands and observed results, then return a concise conversational handoff. No fixed response format is required.

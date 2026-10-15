@@ -14,19 +14,19 @@ func VerifyReports(m *Manifest) []string {
 	}
 	var issues []string
 	for _, h := range m.Harnesses {
-		issues = append(issues, verifyHarness(h.ID, m.KitDir)...)
+		issues = append(issues, verifyHarness(h.ID, m.KitDir, h.Targets)...)
 	}
 	return issues
 }
 
-func verifyHarness(id, kitDir string) []string {
+func verifyHarness(id, kitDir string, targets []string) []string {
 	switch id {
 	case "claude":
 		return verifyClaude(kitDir)
 	case "codex":
-		return verifyCodex(kitDir)
+		return verifyCodex(kitDir, targets)
 	case "cursor":
-		return verifyCursor(kitDir)
+		return verifyCursor(kitDir, targets)
 	case "antigravity":
 		return verifyAgy(kitDir)
 	default:
@@ -68,28 +68,57 @@ func verifyClaude(kitDir string) []string {
 	return issues
 }
 
-func verifyCodex(kitDir string) []string {
+func verifyCodex(kitDir string, targets []string) []string {
 	dir := codexHome()
 	var issues []string
-	if msg := verifySymlinkToKit(filepath.Join(dir, codexProfileName+".config.toml"), kitDir, "codex", codexProfileName+".config.toml"); msg != "" {
-		issues = append(issues, msg)
+	globalAgent := filepath.Join(dir, "agents", workerAgentName+".toml")
+	globalInstructions := filepath.Join(dir, "AGENTS.md")
+	if hasTarget(targets, globalAgent) {
+		if msg := verifySymlinkToKit(globalAgent, kitDir, "codex", workerAgentName+".config.toml"); msg != "" {
+			issues = append(issues, msg)
+		}
+		if data, err := os.ReadFile(globalInstructions); err != nil || !strings.Contains(string(data), markerStart) {
+			issues = append(issues, globalInstructions+": muster orchestrator instructions missing")
+		}
 	}
-	cfg, err := os.ReadFile(filepath.Join(dir, "config.toml"))
-	if err != nil || !strings.Contains(string(cfg), tomlMarkerBegin) {
-		issues = append(issues, filepath.Join(dir, "config.toml")+": muster block missing")
+	for _, target := range targets {
+		if target != globalAgent && strings.HasSuffix(target, filepath.Join(".codex", "agents", workerAgentName+".toml")) {
+			projectDir := filepath.Dir(filepath.Dir(filepath.Dir(target)))
+			projectAgent := filepath.Join(projectDir, ".codex", "agents", workerAgentName+".toml")
+			if msg := verifySymlinkToKit(projectAgent, kitDir, "codex", workerAgentName+".config.toml"); msg != "" {
+				issues = append(issues, msg)
+			}
+			projectInstructions, err := os.ReadFile(filepath.Join(projectDir, "AGENTS.md"))
+			if err != nil || !strings.Contains(string(projectInstructions), markerStart) {
+				issues = append(issues, filepath.Join(projectDir, "AGENTS.md")+": muster orchestrator instructions missing")
+			}
+		}
 	}
 	return issues
 }
 
-func verifyCursor(kitDir string) []string {
-	dir, err := cursorRulesDir()
-	if err != nil {
-		return []string{err.Error()}
+func verifyCursor(kitDir string, targets []string) []string {
+	for _, target := range targets {
+		if strings.HasSuffix(target, filepath.Join(".cursor", "rules", "muster-orchestrator.mdc")) {
+			if msg := verifySymlinkToKit(target, kitDir, "cursor", "muster-orchestrator.mdc"); msg != "" {
+				return []string{msg}
+			}
+			return nil
+		}
 	}
-	if msg := verifySymlinkToKit(filepath.Join(dir, "muster-orchestrator.mdc"), kitDir, "cursor", "muster-orchestrator.mdc"); msg != "" {
-		return []string{msg}
+	if len(targets) == 0 {
+		return []string{"cursor: global User Rules must be configured in Cursor Settings; no project rule is linked"}
 	}
-	return nil
+	return []string{"cursor: project-scoped Muster rule missing"}
+}
+
+func hasTarget(targets []string, want string) bool {
+	for _, target := range targets {
+		if target == want {
+			return true
+		}
+	}
+	return false
 }
 
 func verifyAgy(kitDir string) []string {

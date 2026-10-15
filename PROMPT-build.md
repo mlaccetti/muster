@@ -91,8 +91,8 @@ See [docs/architecture.md](docs/architecture.md) and [docs/linking.md](docs/link
 
 - Auto-detect harnesses on `PATH`; flags `--harness`, `--all`, `--global`, `--project`, `--unlink`.
 - Record state in `$MUSTER_HOME/link-manifest.json`.
-- Codex: managed TOML block + profiles; Claude/Agy: settings JSON agent selector; Cursor: always-applied rules.
-- Optional shims: `codex-muster`, `agy-muster` under `$MUSTER_HOME/bin`.
+- Codex: native `AGENTS.md` instructions + custom worker agent; Claude/Agy: settings JSON agent selector; Cursor: always-applied project rule (global User Rules remain a Settings-only step).
+- Optional Antigravity shim: `agy-muster` under `$MUSTER_HOME/bin`.
 
 Legacy managed markdown blocks (`internal/link/block.go`) remain for upsert helpers/tests; primary delivery is symlinks + kit/link prompts.
 

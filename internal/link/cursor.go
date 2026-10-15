@@ -13,23 +13,10 @@ func cursorRulesDir() (string, error) {
 	return filepath.Join(home, ".cursor", "rules"), nil
 }
 
-func linkCursorGlobal(kitDir string, dryRun bool) ([]string, error) {
-	dir, err := cursorRulesDir()
-	if err != nil {
-		return nil, err
-	}
-	var targets []string
-	orchRule := filepath.Join(dir, "muster-orchestrator.mdc")
-	if err := linkKitFileDryRun(orchRule, dryRun, kitDir, "cursor", "muster-orchestrator.mdc"); err != nil {
-		return nil, err
-	}
-	targets = append(targets, orchRule)
-	workerRule := filepath.Join(dir, "muster-worker.mdc")
-	if err := linkKitFileDryRun(workerRule, dryRun, kitDir, "cursor", "muster-worker.mdc"); err != nil {
-		return nil, err
-	}
-	targets = append(targets, workerRule)
-	return targets, nil
+func linkCursorGlobal(_ string, _ bool) ([]string, error) {
+	// Cursor User Rules are configured in Cursor Settings, not in ~/.cursor/rules.
+	// Global rule installation is not supported by the filesystem linker.
+	return nil, nil
 }
 
 func unlinkCursorGlobal(dryRun bool) error {
