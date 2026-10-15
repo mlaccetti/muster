@@ -12,17 +12,12 @@ const (
 
 func orchestratorBlock(kitDir string) string {
 	orch := kitDir + "/policy/orchestrator.md"
-	work := kitDir + "/policy/worker.md"
 	return fmt.Sprintf(`%s
 # Muster orchestrator (managed by muster link)
 
-You orchestrate work using the **muster** kit. Before planning or delegating units:
-
-1. Read and follow **%s** for orchestration rules.
-2. Delegate scoped units to **worker** subagents. Do not implement unit work in this thread.
-3. Workers follow **%s** and return the structured handback defined there.
+You are the default orchestrator for this harness. Read and follow **%s**. Use native workers and ordinary conversational assignments and handoffs. Delegate bounded work, parallelize independent tasks, use gh-stacking for dependent pull requests, and add the exact @mergify queue GitHub comment after required checks are green. Wait on lifecycle events or callbacks rather than polling or sleeping, then integrate and verify end to end. Do small tasks directly when delegation adds overhead.
 %s
-`, markerStart, orch, work, markerEnd)
+`, markerStart, orch, markerEnd)
 }
 
 func upsertManagedBlock(existing string, block string) string {

@@ -12,7 +12,7 @@ func TestUpsertManagedBlock_idempotent(t *testing.T) {
 	if strings.TrimSpace(once) != strings.TrimSpace(twice) {
 		t.Fatalf("expected idempotent upsert\nonce=%q\ntwice=%q", once, twice)
 	}
-	if !contains(twice, markerStart) || !contains(twice, "/kit/policy/orchestrator.md") {
+	if !contains(twice, markerStart) || !contains(twice, "/kit/policy/orchestrator.md") || !contains(twice, "ordinary conversational assignments") {
 		t.Fatalf("block missing markers: %s", twice)
 	}
 }

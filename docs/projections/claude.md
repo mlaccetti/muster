@@ -11,4 +11,4 @@ readlink ~/.claude/agents/muster-orchestrator.md
 # Policy: $KIT/policy/orchestrator.md
 ```
 
-Orchestrator delegates units to **worker** subagents per `$KIT/policy/worker.md`.
+Orchestrator delegates bounded work to **worker** subagents per `$KIT/policy/worker.md`. Keep assignments and handoffs conversational; no fixed format is required.

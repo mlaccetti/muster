@@ -1,14 +1,16 @@
 # muster
 
-*Same orchestrator and worker behavior in every coding harness.*
+*Native orchestration, shared policy, prose handoffs.*
 
-**muster** installs a small, versioned **policy kit** and **links** it into Claude Code, Codex, Cursor Agent, and Antigravity (`agy`). Orchestrators plan work and delegate to **worker** subagents inside the harness.
+**muster** makes its orchestrator the default for Claude Code, Codex, Cursor Agent, and Antigravity (`agy`). Each harness uses its native workers, worktrees, and lifecycle events. Muster installs prose policy; orchestrator assignments and worker handoffs stay ordinary conversation with no required format.
 
 ## Commands
 
 - **`muster install`**: copy the kit to `MUSTER_HOME` (orchestrator + worker policy).
 - **`muster link`**: wire harness entrypoints so the main session acts as **orchestrator** (plan, delegate, verify) and **worker** subagents stay scoped.
 - **`muster doctor`**: kit on disk, link manifest, optional harness CLI probe.
+
+The orchestrator keeps coordination small, delegates bounded work, parallelizes independent tasks, and integrates and verifies worker changes. Use `gh-stacking` for dependent pull requests. After required checks are green, add the exact GitHub comment `@mergify queue` and wait for Mergify, merge, and post-merge CI events. Do not poll or sleep while waiting.
 
 ## Install
 

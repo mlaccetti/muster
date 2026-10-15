@@ -1,8 +1,8 @@
 ---
-description: Muster worker policy reference
+description: Muster worker for one bounded task; return a concise conversational handoff.
 alwaysApply: false
 ---
 
 # Muster worker
 
-Read `<kit>/policy/worker.md` from `muster kit path`. Return the structured handback when the unit is complete.
+Do only the assigned bounded task. Preserve unrelated work, surface unclear or conflicting scope before expanding it, and do not sub-delegate or take on adjacent tasks. Do not commit, push, queue or merge pull requests, or publish releases unless explicitly assigned. Report relevant checks with exact commands and observed results, then return a concise conversational handoff. No fixed response format is required.

@@ -9,5 +9,5 @@ jq -r '.agent' ~/.gemini/antigravity-cli/settings.json
 # Orchestrator policy: $KIT/policy/orchestrator.md
 ```
 
-CLI binary `agy` (harness id `antigravity`). Delegate units to worker subagents per kit policy.
+CLI binary `agy` (harness id `antigravity`). Delegate bounded work to native worker subagents per kit policy. Assignments and handoffs are ordinary conversation.
 

@@ -19,11 +19,7 @@ func installLinkShims(dryRun bool) error {
 	if err := os.MkdirAll(bin, 0o755); err != nil {
 		return err
 	}
-	codexShim := "#!/bin/sh\nexec codex -p " + codexProfileName + " \"$@\"\n"
 	agyShim := "#!/bin/sh\nexec agy --agent " + orchestratorAgentName + " \"$@\"\n"
-	if err := writeExecutable(filepath.Join(bin, "codex-muster"), codexShim); err != nil {
-		return err
-	}
 	return writeExecutable(filepath.Join(bin, "agy-muster"), agyShim)
 }
 

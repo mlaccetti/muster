@@ -15,7 +15,7 @@ Operators need only `muster install` and `muster link`.
 **Project name:** `muster`  
 **CLI binary:** `muster`
 
-**Tagline (README):** *Same orchestrator and worker behavior in every coding harness.*
+**Tagline (README):** *Native orchestration, shared policy, prose handoffs.*
 
 ---
 
@@ -49,6 +49,7 @@ Deliver in one installable unit:
 
 - No `muster worker`, `muster dispatch`, or `muster pass` subcommands.
 - No harness subprocess dispatch, tier pools, brief rendering, or pass runners in this codebase.
+- No required structured format for orchestrator-to-worker assignments or worker handoffs.
 - No calls to real `claude` / `codex` / `cursor-agent` / `agy` in CI or default tests.
 - No `time.Sleep` in production code; gate with `scripts/check-no-sleep.sh`.
 
@@ -65,6 +66,10 @@ Deliver in one installable unit:
 ```
 
 Orchestrator policy: plan units, delegate to **worker** subagents in the harness, verify evidence.
+
+The orchestrator keeps coordination small, delegates bounded work, parallelizes independent tasks, and uses native lifecycle events or callbacks to wait. Use `gh-stacking` for dependent pull requests. After required checks are green, add the exact `@mergify queue` comment and verify Mergify, merge, and post-merge CI events. Do not poll or sleep.
+
+Worker assignments and handoffs are ordinary harness conversation. Muster must not define a required schema, status enum, or serialized task/result artifact.
 
 See [docs/architecture.md](docs/architecture.md) and [docs/linking.md](docs/linking.md).
 
@@ -86,8 +91,8 @@ See [docs/architecture.md](docs/architecture.md) and [docs/linking.md](docs/link
 
 - Auto-detect harnesses on `PATH`; flags `--harness`, `--all`, `--global`, `--project`, `--unlink`.
 - Record state in `$MUSTER_HOME/link-manifest.json`.
-- Codex: managed TOML block + profiles; Claude/Agy: settings JSON agent selector; Cursor: always-applied rules.
-- Optional shims: `codex-muster`, `agy-muster` under `$MUSTER_HOME/bin`.
+- Codex: native `AGENTS.md` instructions + custom worker agent; Claude/Agy: settings JSON agent selector; Cursor: always-applied project rule (global User Rules remain a Settings-only step).
+- Optional Antigravity shim: `agy-muster` under `$MUSTER_HOME/bin`.
 
 Legacy managed markdown blocks (`internal/link/block.go`) remain for upsert helpers/tests; primary delivery is symlinks + kit/link prompts.
 
@@ -122,6 +127,7 @@ Legacy managed markdown blocks (`internal/link/block.go`) remain for upsert help
 - [ ] `just check` green without real harness binaries.
 - [ ] `muster install` + `muster link` + `muster doctor` work in tests.
 - [ ] Orchestrator link prompts delegate to workers; kit policy matches docs.
+- [ ] Policies require parallel independent work, event-driven waits, `gh-stacking`, and the exact Mergify queue comment without imposing a handoff schema.
 
 ---
 

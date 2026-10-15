@@ -25,36 +25,31 @@ func linkCodexGlobal(kitDir string, dryRun bool) ([]string, error) {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return nil, err
 		}
+		_ = removeLink(filepath.Join(dir, "muster-orchestrator.config.toml"))
+		_ = removeLink(filepath.Join(dir, workerAgentName+".config.toml"))
 	}
 	var touched []string
-	if err := ensureFile(filepath.Join(dir, "config.toml"), dryRun); err != nil {
+	if err := unlinkTomlFile(filepath.Join(dir, "config.toml"), dryRun); err != nil {
 		return nil, err
 	}
-	orchProfile := filepath.Join(dir, codexProfileName+".config.toml")
-	if err := linkKitFileDryRun(orchProfile, dryRun, kitDir, "codex", codexProfileName+".config.toml"); err != nil {
+	workerAgent := filepath.Join(dir, "agents", workerAgentName+".toml")
+	if err := linkKitFileDryRun(workerAgent, dryRun, kitDir, "codex", workerAgentName+".config.toml"); err != nil {
 		return nil, err
 	}
-	touched = append(touched, orchProfile)
+	touched = append(touched, workerAgent)
 
-	workerProfile := filepath.Join(dir, workerAgentName+".config.toml")
-	if err := linkKitFileDryRun(workerProfile, dryRun, kitDir, "codex", workerAgentName+".config.toml"); err != nil {
+	if err := unlinkCodexAgentsRole(dir, dryRun); err != nil {
 		return nil, err
 	}
-	touched = append(touched, workerProfile)
 
-	cfg := filepath.Join(dir, "config.toml")
-	if err := patchTomlFile(cfg, codexManagedTomlBlock(kitDir), dryRun); err != nil {
+	globalAgents := filepath.Join(dir, "AGENTS.md")
+	if err := patchFile(globalAgents, func(s string) string { return upsertManagedBlock(s, orchestratorBlock(kitDir)) }, dryRun); err != nil {
 		return nil, err
 	}
-	touched = append(touched, cfg)
-
-	if err := patchCodexAgentsRole(dir, dryRun); err != nil {
-		return nil, err
-	}
+	touched = append(touched, globalAgents)
 
 	// Legacy prose cleanup.
 	if !dryRun {
-		_ = patchFile(filepath.Join(dir, "AGENTS.md"), removeManagedBlock, false)
 		_ = os.Remove(filepath.Join(dir, "muster-worker.md"))
 	}
 	return touched, nil
@@ -69,7 +64,8 @@ func unlinkCodexGlobal(dryRun bool) error {
 		return err
 	}
 	if !dryRun {
-		_ = removeLink(filepath.Join(dir, codexProfileName+".config.toml"))
+		_ = removeLink(filepath.Join(dir, "agents", workerAgentName+".toml"))
+		_ = removeLink(filepath.Join(dir, "muster-orchestrator.config.toml"))
 		_ = removeLink(filepath.Join(dir, workerAgentName+".config.toml"))
 		_ = patchFile(filepath.Join(dir, "AGENTS.md"), removeManagedBlock, false)
 		_ = os.Remove(filepath.Join(dir, "muster-worker.md"))
@@ -78,16 +74,24 @@ func unlinkCodexGlobal(dryRun bool) error {
 }
 
 func linkCodexProject(projectDir, kitDir string, dryRun bool) ([]string, error) {
-	orchProfile := filepath.Join(projectDir, ".codex", codexProfileName+".config.toml")
-	if err := linkKitFileDryRun(orchProfile, dryRun, kitDir, "codex", codexProfileName+".config.toml"); err != nil {
+	if !dryRun {
+		_ = removeLink(filepath.Join(projectDir, ".codex", "muster-orchestrator.config.toml"))
+	}
+	workerAgent := filepath.Join(projectDir, ".codex", "agents", workerAgentName+".toml")
+	if err := linkKitFileDryRun(workerAgent, dryRun, kitDir, "codex", workerAgentName+".config.toml"); err != nil {
 		return nil, err
 	}
-	return []string{orchProfile}, nil
+	agentsPath := filepath.Join(projectDir, "AGENTS.md")
+	if err := patchFile(agentsPath, func(s string) string { return upsertManagedBlock(s, orchestratorBlock(kitDir)) }, dryRun); err != nil {
+		return nil, err
+	}
+	return []string{workerAgent, agentsPath}, nil
 }
 
 func unlinkCodexProject(projectDir string, dryRun bool) error {
 	if !dryRun {
-		_ = removeLink(filepath.Join(projectDir, ".codex", codexProfileName+".config.toml"))
+		_ = removeLink(filepath.Join(projectDir, ".codex", "agents", workerAgentName+".toml"))
+		_ = removeLink(filepath.Join(projectDir, ".codex", "muster-orchestrator.config.toml"))
 	}
-	return nil
+	return patchFile(filepath.Join(projectDir, "AGENTS.md"), removeManagedBlock, dryRun)
 }

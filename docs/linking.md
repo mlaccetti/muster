@@ -1,6 +1,6 @@
 # Linking harnesses
 
-`muster install` lays down the versioned **kit** (policy, schemas, `link/` harness entrypoints). **`muster link`** symlinks those entrypoints into each harness and sets the **default orchestrator** selector. No prose is copied into `AGENTS.md` or harness markdown.
+`muster install` lays down the versioned **kit** (prose policies and `link/` harness entrypoints). **`muster link`** symlinks those entrypoints into each harness and sets the **default orchestrator** selector. Assignments and handoffs are ordinary harness conversation; Muster requires no fixed message format.
 
 ## Behavior
 
@@ -18,12 +18,14 @@ State is recorded in `$MUSTER_HOME/link-manifest.json`. `muster doctor` reports 
 
 ## Per harness (global)
 
-| ID | Default orchestrator | Definitions (symlinks into `$KIT/link/...`) |
+| ID | Native activation | Linked definition |
 |----|----------------------|---------------------------------------------|
 | `claude` | `~/.claude/settings.json` → `"agent": "muster-orchestrator"` | `~/.claude/agents/muster-orchestrator.md`, `muster-worker.md` |
-| `codex` | `~/.codex/config.toml` managed block: `model_instructions_file` + `developer_instructions` (every `codex` run). Profile: `codex -p muster-orchestrator` | `~/.codex/muster-orchestrator.config.toml`, `muster-worker.config.toml`; `[agents.muster-worker]` in `config.toml` |
-| `cursor` | `~/.cursor/rules/muster-orchestrator.mdc` with `alwaysApply: true` | `muster-orchestrator.mdc`, `muster-worker.mdc` |
+| `codex` | `~/.codex/AGENTS.md` (every Codex run) | `~/.codex/agents/muster-worker.toml` |
+| `cursor` | Project-scoped `.cursor/rules/muster-orchestrator.mdc` with `alwaysApply: true`; global User Rules must be set in Cursor Settings | `.cursor/rules/muster-orchestrator.mdc` |
 | `antigravity` (`agy`) | `~/.gemini/antigravity-cli/settings.json` → `"agent": "muster-orchestrator"` | `~/.gemini/config/agents/muster-orchestrator/agent.md`, `muster-worker/agent.md` |
+
+Codex also receives the orchestrator instructions in the linked project's root `AGENTS.md`. Its native worker agent uses `gpt-6-luna` with `medium` reasoning effort. Cursor CLI automatically loads the project rule; global Cursor User Rules must be configured in Cursor Settings.
 
 Project linking adds `.claude/`, `.codex/`, `.cursor/rules/`, or `.agents/agents/` equivalents under the repo.
 
@@ -31,7 +33,6 @@ Project linking adds `.claude/`, `.codex/`, `.cursor/rules/`, or `.agents/agents
 
 After link, `$MUSTER_HOME/bin/` contains:
 
-- **`codex-muster`**: `codex -p muster-orchestrator "$@"`
 - **`agy-muster`**: `agy --agent muster-orchestrator "$@"`
 
 Add `$MUSTER_HOME/bin` to `PATH` if you want those names instead of the stock CLIs.
@@ -55,16 +56,16 @@ readlink ~/.claude/agents/muster-orchestrator.md
 **Codex**
 
 ```bash
-rg MUSTER_LINK_BEGIN ~/.codex/config.toml
-readlink ~/.codex/muster-orchestrator.config.toml
-codex -p muster-orchestrator -h   # profile recognized
+rg 'MUSTER_LINK_START|default orchestrator' ~/.codex/AGENTS.md
+readlink ~/.codex/agents/muster-worker.toml
+codex debug prompt-input "Summarize the active Muster instructions"  # inspect loaded prompt inputs
 ```
 
 **cursor-agent**
 
 ```bash
-test -f ~/.cursor/rules/muster-orchestrator.mdc
-cursor-agent -p --print "List always-applied rules that mention muster or muster kit path"
+test -f .cursor/rules/muster-orchestrator.mdc
+cursor-agent -p --output-format text "Summarize the active Muster project rule"
 ```
 
 **agy**
@@ -79,4 +80,4 @@ Re-run **`muster link`** after `muster install` upgrades the kit so symlinks tar
 
 ## Testing without real harnesses
 
-CI uses `muster link --harness claude --project <dir> --global=false`. Package tests cover codex/cursor/agy global link with temp `HOME` and `CODEX_HOME`.
+CI uses `muster link --harness claude --project <dir> --global=false`. Package tests cover Codex global and project `AGENTS.md` instruction wiring, native worker agent files, Cursor project rules, and Antigravity global linking with temporary homes.
