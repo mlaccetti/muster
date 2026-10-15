@@ -18,4 +18,4 @@ When finished, return a concise structured handback:
 }
 ```
 
-Evidence is required for non-trivial claims. If the orchestrator or factory defines a different report schema for a run, follow that schema for factory-backed work; this block is the default for interactive worker subagents.
+Evidence is required for non-trivial claims.

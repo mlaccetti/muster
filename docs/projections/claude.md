@@ -1,27 +1,14 @@
 # Claude Code projection
 
-Orchestrator policy:
+Prefer **`muster link`** (see [linking.md](../linking.md)) so `~/.claude/settings.json` selects `muster-orchestrator` and agent definitions symlink into the installed kit.
+
+Manual check:
 
 ```bash
 export KIT="$(muster kit path)"
-# Point Claude orchestrator config at:
-# $KIT/policy/orchestrator.md
+jq -r '.agent' ~/.claude/settings.json
+readlink ~/.claude/agents/muster-orchestrator.md
+# Policy: $KIT/policy/orchestrator.md
 ```
 
-Worker (native):
-
-```text
-Use brief.txt and write worker-report to report.txt per $KIT/policy/worker.md
-```
-
-Pinned harness:
-
-```bash
-muster worker --harness claude --brief brief.txt --report report.txt --sync
-```
-
-Pool dispatch:
-
-```bash
-muster dispatch --tier implement --brief brief.txt --report report.txt
-```
+Orchestrator delegates units to **worker** subagents per `$KIT/policy/worker.md`.

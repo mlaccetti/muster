@@ -2,24 +2,13 @@
 
 *Same orchestrator and worker behavior in every coding harness.*
 
-**muster** installs a small, versioned **policy kit** and **links** it into Claude Code, Codex, Cursor Agent, and Antigravity (`agy`). It does not dispatch harnesses, run delivery graphs, or replace **rckt-factory**.
+**muster** installs a small, versioned **policy kit** and **links** it into Claude Code, Codex, Cursor Agent, and Antigravity (`agy`). Orchestrators plan work and delegate to **worker** subagents inside the harness.
 
-## What muster does
+## Commands
 
 - **`muster install`**: copy the kit to `MUSTER_HOME` (orchestrator + worker policy).
-- **`muster link`**: inject managed snippets so the main session acts as **orchestrator** (plan, delegate, verify) and **worker** subagents stay scoped.
+- **`muster link`**: wire harness entrypoints so the main session acts as **orchestrator** (plan, delegate, verify) and **worker** subagents stay scoped.
 - **`muster doctor`**: kit on disk, link manifest, optional harness CLI probe.
-
-## What muster does not do
-
-- No `muster worker`, pools, brief rendering, or pass runner. **rckt-factory** owns harness adapters, tier pools, quota/capacity, and durable runs (`rckt` / `rcktd`).
-- No skills or planning content. **rckt-skills** owns brainstorm/plan skills; factory consumes approved plans when you run delivery.
-
-## Related projects
-
-- **[rckt-factory](https://github.com/mlaccetti/rckt-factory)**: execution, harness selection, delivery workflows.
-- **[rckt-skills](https://github.com/rckt-corp/rckt-skills)**: planning and decomposition skills (optional).
-- **[harness-bridge](https://github.com/mlaccetti/harness-bridge)**: move conversation context between CLIs (optional).
 
 ## Install
 

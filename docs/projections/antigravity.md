@@ -1,13 +1,13 @@
 # Antigravity projection
 
+Prefer **`muster link`**: `agy --agent muster-orchestrator` via `~/.gemini/antigravity-cli/settings.json`.
+
 ```bash
 export KIT="$(muster kit path)"
-# Orchestrator: $KIT/policy/orchestrator.md
+agy agents | rg muster
+jq -r '.agent' ~/.gemini/antigravity-cli/settings.json
+# Orchestrator policy: $KIT/policy/orchestrator.md
 ```
 
-CLI binary `agy` (harness id `antigravity`, flag alias `agy`).
+CLI binary `agy` (harness id `antigravity`). Delegate units to worker subagents per kit policy.
 
-```bash
-muster worker --harness antigravity --brief brief.txt --report report.txt --sync
-muster worker --harness agy --brief brief.txt --report report.txt --sync
-```

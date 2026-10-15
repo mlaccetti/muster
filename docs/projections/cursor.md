@@ -1,13 +1,12 @@
 # Cursor Agent projection
 
+Prefer **`muster link`**: `~/.cursor/rules/muster-orchestrator.mdc` with `alwaysApply: true`.
+
 ```bash
 export KIT="$(muster kit path)"
-# Orchestrator: $KIT/policy/orchestrator.md
+test -f ~/.cursor/rules/muster-orchestrator.mdc
+# Orchestrator policy: $KIT/policy/orchestrator.md
 ```
 
-Binary resolved as `cursor-agent`.
+Binary resolved as `cursor-agent`. Delegate units to worker subagents per kit policy.
 
-```bash
-muster worker --harness cursor --brief brief.txt --report report.txt --sync
-muster dispatch --tier plan --brief brief.txt --report report.txt
-```

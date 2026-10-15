@@ -19,10 +19,8 @@ func orchestratorBlock(kitDir string) string {
 You orchestrate work using the **muster** kit. Before planning or delegating units:
 
 1. Read and follow **%s** for orchestration rules.
-2. Delegate scoped units to **worker** subagents (or to **rckt-factory** when `+"`rckt`"+` is on PATH). Do not implement unit work in this thread.
+2. Delegate scoped units to **worker** subagents. Do not implement unit work in this thread.
 3. Workers follow **%s** and return the structured handback defined there.
-
-Muster does not run harness dispatch. Harness choice, pools, and durable runs belong to **rckt-factory**.
 %s
 `, markerStart, orch, work, markerEnd)
 }

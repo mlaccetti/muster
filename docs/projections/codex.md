@@ -1,13 +1,13 @@
 # Codex projection
 
+Prefer **`muster link`**: `codex -p muster-orchestrator` and symlinks under `~/.codex/`.
+
 ```bash
 export KIT="$(muster kit path)"
-# Orchestrator: $KIT/policy/orchestrator.md
+rg MUSTER_LINK_BEGIN ~/.codex/config.toml
+readlink ~/.codex/muster-orchestrator.config.toml
+# Orchestrator policy: $KIT/policy/orchestrator.md
 ```
 
-Worker: follow `$KIT/policy/worker.md` with `brief.txt` / `report.txt`.
+Workers follow `$KIT/policy/worker.md` when invoked as the muster-worker agent profile.
 
-```bash
-muster worker --harness codex --brief brief.txt --report report.txt --sync
-muster dispatch --tier review --brief brief.txt --report report.txt
-```
