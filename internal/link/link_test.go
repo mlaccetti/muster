@@ -85,6 +85,15 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	if target, err := filepath.EvalSymlinks(codexProfile); err != nil || target != filepath.Join(kitDir, "link", "codex", codexProfileName+".config.toml") {
 		t.Fatalf("codex profile: %v %s", err, target)
 	}
+	workerConfig, err := os.ReadFile(filepath.Join(kitDir, "link", "codex", workerAgentName+".config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, required := range []string{`model = "gpt-6-luna"`, `model_reasoning_effort = "medium"`} {
+		if !strings.Contains(string(workerConfig), required) {
+			t.Errorf("Codex worker config missing %q: %s", required, workerConfig)
+		}
+	}
 	cfg, err := os.ReadFile(filepath.Join(home, ".codex", "config.toml"))
 	if err != nil || !strings.Contains(string(cfg), tomlMarkerBegin) {
 		t.Fatalf("codex config: %v %s", err, cfg)

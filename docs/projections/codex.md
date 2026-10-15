@@ -9,5 +9,5 @@ readlink ~/.codex/muster-orchestrator.config.toml
 # Orchestrator policy: $KIT/policy/orchestrator.md
 ```
 
-Workers follow `$KIT/policy/worker.md` when invoked as the muster-worker agent profile.
+Workers follow `$KIT/policy/worker.md` when invoked as the muster-worker agent profile. Codex configures that worker to use `gpt-6-luna` with `medium` reasoning effort. Assignments and handoffs remain ordinary conversation.
 

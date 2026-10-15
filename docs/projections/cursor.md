@@ -8,5 +8,5 @@ test -f ~/.cursor/rules/muster-orchestrator.mdc
 # Orchestrator policy: $KIT/policy/orchestrator.md
 ```
 
-Binary resolved as `cursor-agent`. Delegate units to worker subagents per kit policy.
+Binary resolved as `cursor-agent`. Delegate bounded work to native worker subagents per kit policy. Assignments and handoffs are ordinary conversation.
 

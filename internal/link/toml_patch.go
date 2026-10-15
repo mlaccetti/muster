@@ -57,7 +57,7 @@ func codexAgentsBlock(codexDir string) string {
 	workerCfg := filepath.Join(codexDir, workerAgentName+".config.toml")
 	return fmt.Sprintf(`%s
 [agents.%s]
-description = "Muster worker (muster worker CLI / orchestrator spawn)"
+description = "Muster worker for one bounded task with a concise conversational handoff"
 config_file = %q
 %s
 `, tomlAgentsBegin, workerAgentName, workerCfg, tomlAgentsEnd)

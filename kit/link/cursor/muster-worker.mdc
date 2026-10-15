@@ -1,8 +1,8 @@
 ---
-description: Muster worker policy reference
+description: Muster worker for one bounded task; return a concise conversational handoff.
 alwaysApply: false
 ---
 
 # Muster worker
 
-Read `<kit>/policy/worker.md` from `muster kit path`. Return the structured handback when the unit is complete.
+Read `<kit>/policy/worker.md` from `muster kit path`. Do only the assigned task and return a concise conversational summary of changes, checks, observed results, and relevant blockers or unfinished work. No fixed response format is required.

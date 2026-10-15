@@ -1,6 +1,6 @@
 # Linking harnesses
 
-`muster install` lays down the versioned **kit** (policy, schemas, `link/` harness entrypoints). **`muster link`** symlinks those entrypoints into each harness and sets the **default orchestrator** selector. No prose is copied into `AGENTS.md` or harness markdown.
+`muster install` lays down the versioned **kit** (prose policies and `link/` harness entrypoints). **`muster link`** symlinks those entrypoints into each harness and sets the **default orchestrator** selector. Assignments and handoffs are ordinary harness conversation; Muster requires no fixed message format.
 
 ## Behavior
 
@@ -24,6 +24,8 @@ State is recorded in `$MUSTER_HOME/link-manifest.json`. `muster doctor` reports 
 | `codex` | `~/.codex/config.toml` managed block: `model_instructions_file` + `developer_instructions` (every `codex` run). Profile: `codex -p muster-orchestrator` | `~/.codex/muster-orchestrator.config.toml`, `muster-worker.config.toml`; `[agents.muster-worker]` in `config.toml` |
 | `cursor` | `~/.cursor/rules/muster-orchestrator.mdc` with `alwaysApply: true` | `muster-orchestrator.mdc`, `muster-worker.mdc` |
 | `antigravity` (`agy`) | `~/.gemini/antigravity-cli/settings.json` → `"agent": "muster-orchestrator"` | `~/.gemini/config/agents/muster-orchestrator/agent.md`, `muster-worker/agent.md` |
+
+The Codex worker profile uses `gpt-6-luna` with `medium` reasoning effort.
 
 Project linking adds `.claude/`, `.codex/`, `.cursor/rules/`, or `.agents/agents/` equivalents under the repo.
 
