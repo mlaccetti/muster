@@ -1,11 +1,5 @@
 # Cursor Agent projection
 
-Prefer **`muster link --project`**: it installs `.cursor/rules/muster-orchestrator.mdc` with `alwaysApply: true`. Cursor CLI loads project rules. Global User Rules are managed in Cursor Settings, so Muster cannot set them through a supported file path.
+Muster cannot configure Cursor's global User Rules through a supported CLI or file interface. Add the contents of Muster's `policy/orchestrator.md` to Cursor Settings → Rules → User Rules to make Muster the default orchestrator for Cursor.
 
-```bash
-test -f .cursor/rules/muster-orchestrator.mdc
-cat .muster/orchestrator.path
-```
-
-Binary resolved as `cursor-agent`. The linked always-applied project rule makes the current session follow the Muster orchestrator policy. Cursor CLI documentation currently describes a single CLI agent and does not document a native subagent dispatch or lifecycle callback interface. The rule therefore tells the agent to use only worker and event tools actually exposed by the session; Cursor Background Agents are a separate capability.
-
+Cursor Agent resolves as `cursor-agent`. Worker delegation and event-driven waiting depend on capabilities exposed by the active Cursor session; the projection policy asks the orchestrator to use only capabilities actually available.

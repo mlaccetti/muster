@@ -10,11 +10,10 @@ import (
 	"github.com/mlaccetti/muster/internal/kit"
 )
 
-func TestLinkProjectClaudeOnly(t *testing.T) {
+func TestLinkClaudeHarnessWide(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("MUSTER_HOME", filepath.Join(home, "muster"))
-	project := t.TempDir()
 
 	kitDir, err := kit.Install()
 	if err != nil {
@@ -22,10 +21,7 @@ func TestLinkProjectClaudeOnly(t *testing.T) {
 	}
 
 	res, err := Run(Options{
-		ProjectDir: project,
-		Harnesses:  []string{"claude"},
-		Global:     false,
-		Project:    true,
+		Harnesses: []string{"claude"},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -33,7 +29,7 @@ func TestLinkProjectClaudeOnly(t *testing.T) {
 	if len(res.Harnesses) != 1 || res.Harnesses[0].ID != "claude" {
 		t.Fatalf("res %+v", res)
 	}
-	settingsPath := filepath.Join(project, ".claude", "settings.json")
+	settingsPath := filepath.Join(home, ".claude", "settings.json")
 	raw, err := os.ReadFile(settingsPath)
 	if err != nil {
 		t.Fatal(err)
@@ -45,7 +41,7 @@ func TestLinkProjectClaudeOnly(t *testing.T) {
 	if settings["agent"] != orchestratorAgentName {
 		t.Fatalf("settings agent: %+v", settings)
 	}
-	orchAgent := filepath.Join(project, ".claude", "agents", orchestratorAgentName+".md")
+	orchAgent := filepath.Join(home, ".claude", "agents", orchestratorAgentName+".md")
 	target, err := filepath.EvalSymlinks(orchAgent)
 	if err != nil {
 		t.Fatal(err)
@@ -54,12 +50,12 @@ func TestLinkProjectClaudeOnly(t *testing.T) {
 	if target != want {
 		t.Fatalf("agent link %s != %s", target, want)
 	}
-	if _, err := os.Stat(filepath.Join(project, ".muster", "orchestrator.path")); err != nil {
-		t.Fatal(err)
-	}
 	m, err := LoadManifest()
 	if err != nil || len(m.Harnesses) != 1 {
 		t.Fatalf("manifest %+v err %v", m, err)
+	}
+	if m.Harnesses[0].ID != "claude" || len(m.Harnesses[0].Targets) == 0 {
+		t.Fatalf("manifest does not describe harness-wide targets: %+v", m.Harnesses[0])
 	}
 }
 
@@ -73,10 +69,8 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = Run(Options{
+	res, err := Run(Options{
 		Harnesses: []string{"codex", "cursor", "antigravity"},
-		Global:    true,
-		Project:   false,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -101,6 +95,16 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(home, ".cursor", "rules", "muster-orchestrator.mdc")); !os.IsNotExist(err) {
 		t.Fatalf("Cursor global rules are not a supported filesystem target; got err %v", err)
 	}
+	if len(res.Skipped) != 1 || !strings.Contains(res.Skipped[0], "Cursor Settings") {
+		t.Fatalf("Cursor setup limitation should be reported: %+v", res.Skipped)
+	}
+	manifest, err := LoadManifest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest.Harnesses) != 2 {
+		t.Fatalf("manifest should include only configured harnesses: %+v", manifest.Harnesses)
+	}
 	agyAgent := filepath.Join(home, ".gemini", "config", "agents", orchestratorAgentName, "agent.md")
 	if _, err := os.Stat(agyAgent); err != nil {
 		t.Fatal(err)
@@ -111,7 +115,7 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	}
 }
 
-func TestLinkProjectCodexCursorDefaultInstructions(t *testing.T) {
+func TestLinkNeverWritesProjectFiles(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
@@ -120,54 +124,46 @@ func TestLinkProjectCodexCursorDefaultInstructions(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(project, "AGENTS.md"), []byte("# Existing project guidance\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	kitDir, err := kit.Install()
-	if err != nil {
+	if _, err := kit.Install(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Run(Options{ProjectDir: project, Harnesses: []string{"codex", "cursor"}, Global: false, Project: true}); err != nil {
+	if _, err := Run(Options{Harnesses: []string{"codex", "cursor"}}); err != nil {
 		t.Fatal(err)
 	}
-	projectInstructions, err := os.ReadFile(filepath.Join(project, "AGENTS.md"))
-	if err != nil || !strings.Contains(string(projectInstructions), markerStart) || !strings.Contains(string(projectInstructions), "Existing project guidance") {
-		t.Fatalf("project instructions did not preserve and add managed block: %v %s", err, projectInstructions)
+	guidance, err := os.ReadFile(filepath.Join(project, "AGENTS.md"))
+	if err != nil || string(guidance) != "# Existing project guidance\n" {
+		t.Fatalf("project guidance changed: %v %q", err, guidance)
 	}
-	workerAgent := filepath.Join(project, ".codex", "agents", workerAgentName+".toml")
-	if target, err := filepath.EvalSymlinks(workerAgent); err != nil || target != filepath.Join(kitDir, "link", "codex", workerAgentName+".config.toml") {
-		t.Fatalf("project worker agent: %v %s", err, target)
-	}
-	cursorRule := filepath.Join(project, ".cursor", "rules", "muster-orchestrator.mdc")
-	if target, err := filepath.EvalSymlinks(cursorRule); err != nil || target != filepath.Join(kitDir, "link", "cursor", "muster-orchestrator.mdc") {
-		t.Fatalf("project Cursor rule: %v %s", err, target)
+	for _, path := range []string{".codex", ".cursor", ".claude", ".agents", ".muster"} {
+		if _, err := os.Lstat(filepath.Join(project, path)); !os.IsNotExist(err) {
+			t.Fatalf("link wrote project path %s (err=%v)", path, err)
+		}
 	}
 	manifest, err := LoadManifest()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if issues := VerifyReports(manifest); len(issues) != 0 {
-		t.Fatalf("linked Codex and Cursor project wiring failed verification: %v", issues)
+		t.Fatalf("linked Codex harness wiring failed verification: %v", issues)
 	}
 }
 
 func TestLinkAllWithoutGlobalPaths(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("MUSTER_HOME", filepath.Join(home, "muster"))
-	project := t.TempDir()
 	_, err := kit.Install()
 	if err != nil {
 		t.Fatal(err)
 	}
 	res, err := Run(Options{
-		ProjectDir: project,
-		All:        true,
-		Global:     false,
-		Project:    true,
-		DryRun:     true,
+		All:    true,
+		DryRun: true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(res.Harnesses) != 4 {
-		t.Fatalf("expected 4 harnesses, got %d", len(res.Harnesses))
+	if len(res.Harnesses) != 3 || len(res.Skipped) != 1 {
+		t.Fatalf("expected three configured harnesses and Cursor Settings guidance, got %+v", res)
 	}
 }
 

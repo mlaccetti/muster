@@ -72,26 +72,3 @@ func unlinkCodexGlobal(dryRun bool) error {
 	}
 	return nil
 }
-
-func linkCodexProject(projectDir, kitDir string, dryRun bool) ([]string, error) {
-	if !dryRun {
-		_ = removeLink(filepath.Join(projectDir, ".codex", "muster-orchestrator.config.toml"))
-	}
-	workerAgent := filepath.Join(projectDir, ".codex", "agents", workerAgentName+".toml")
-	if err := linkKitFileDryRun(workerAgent, dryRun, kitDir, "codex", workerAgentName+".config.toml"); err != nil {
-		return nil, err
-	}
-	agentsPath := filepath.Join(projectDir, "AGENTS.md")
-	if err := patchFile(agentsPath, func(s string) string { return upsertManagedBlock(s, orchestratorBlock(kitDir)) }, dryRun); err != nil {
-		return nil, err
-	}
-	return []string{workerAgent, agentsPath}, nil
-}
-
-func unlinkCodexProject(projectDir string, dryRun bool) error {
-	if !dryRun {
-		_ = removeLink(filepath.Join(projectDir, ".codex", "agents", workerAgentName+".toml"))
-		_ = removeLink(filepath.Join(projectDir, ".codex", "muster-orchestrator.config.toml"))
-	}
-	return patchFile(filepath.Join(projectDir, "AGENTS.md"), removeManagedBlock, dryRun)
-}

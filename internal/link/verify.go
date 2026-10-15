@@ -81,35 +81,11 @@ func verifyCodex(kitDir string, targets []string) []string {
 			issues = append(issues, globalInstructions+": muster orchestrator instructions missing")
 		}
 	}
-	for _, target := range targets {
-		if target != globalAgent && strings.HasSuffix(target, filepath.Join(".codex", "agents", workerAgentName+".toml")) {
-			projectDir := filepath.Dir(filepath.Dir(filepath.Dir(target)))
-			projectAgent := filepath.Join(projectDir, ".codex", "agents", workerAgentName+".toml")
-			if msg := verifySymlinkToKit(projectAgent, kitDir, "codex", workerAgentName+".config.toml"); msg != "" {
-				issues = append(issues, msg)
-			}
-			projectInstructions, err := os.ReadFile(filepath.Join(projectDir, "AGENTS.md"))
-			if err != nil || !strings.Contains(string(projectInstructions), markerStart) {
-				issues = append(issues, filepath.Join(projectDir, "AGENTS.md")+": muster orchestrator instructions missing")
-			}
-		}
-	}
 	return issues
 }
 
-func verifyCursor(kitDir string, targets []string) []string {
-	for _, target := range targets {
-		if strings.HasSuffix(target, filepath.Join(".cursor", "rules", "muster-orchestrator.mdc")) {
-			if msg := verifySymlinkToKit(target, kitDir, "cursor", "muster-orchestrator.mdc"); msg != "" {
-				return []string{msg}
-			}
-			return nil
-		}
-	}
-	if len(targets) == 0 {
-		return []string{"cursor: global User Rules must be configured in Cursor Settings; no project rule is linked"}
-	}
-	return []string{"cursor: project-scoped Muster rule missing"}
+func verifyCursor(_ string, _ []string) []string {
+	return []string{"cursor: global User Rules must be configured in Cursor Settings; Muster cannot configure them through a supported CLI or file interface"}
 }
 
 func hasTarget(targets []string, want string) bool {

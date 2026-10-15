@@ -1,8 +1,0 @@
----
-description: Default Muster orchestrator. Delegate bounded work in parallel, integrate, and verify.
-alwaysApply: true
----
-
-# Muster orchestrator
-
-Read and follow the orchestrator policy path recorded in `.muster/orchestrator.path`. Keep coordination small and do small tasks directly when delegation adds overhead. Use only worker, parallelism, worktree, and lifecycle tools actually exposed by this Cursor Agent session; do not claim a handoff or wait for an event the harness cannot produce. Integrate and verify any work returned by native agents.

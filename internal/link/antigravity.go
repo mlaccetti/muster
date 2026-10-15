@@ -78,20 +78,3 @@ func unlinkAntigravityGlobal(dryRun bool) error {
 	}
 	return restoreAgyDefaultAgent(filepath.Join(settingsDir, "settings.json"), filepath.Join(settingsDir, ".muster-link.json"), dryRun)
 }
-
-func linkAntigravityProject(projectDir, kitDir string, dryRun bool) ([]string, error) {
-	dir := filepath.Join(projectDir, ".agents", "agents", orchestratorAgentName)
-	target := filepath.Join(dir, "agent.md")
-	if err := linkKitFileDryRun(target, dryRun, kitDir, "agy", orchestratorAgentName, "agent.md"); err != nil {
-		return nil, err
-	}
-	return []string{target}, nil
-}
-
-func unlinkAntigravityProject(projectDir string, dryRun bool) error {
-	if !dryRun {
-		_ = removeLink(filepath.Join(projectDir, ".agents", "agents", orchestratorAgentName, "agent.md"))
-		_ = os.RemoveAll(filepath.Join(projectDir, ".agents", "agents", orchestratorAgentName))
-	}
-	return nil
-}

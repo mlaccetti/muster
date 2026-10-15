@@ -1,6 +1,7 @@
 package link
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -13,18 +14,14 @@ func adapterAllIDs() []string {
 }
 
 type Options struct {
-	ProjectDir string
-	Harnesses  []string // empty = auto-detect on PATH (unless All)
-	All        bool     // link all known harness IDs without PATH detect
-	Global     bool
-	Project    bool
-	DryRun     bool
-	Unlink     bool
+	Harnesses []string // empty = auto-detect on PATH (unless All)
+	All       bool     // link all known harness IDs without PATH detect
+	DryRun    bool
+	Unlink    bool
 }
 
 type Result struct {
 	KitDir    string
-	Project   string
 	Harnesses []HarnessLink
 	Skipped   []string
 }
@@ -37,14 +34,6 @@ func Run(opts Options) (*Result, error) {
 		kitDir, err = kit.Install()
 		if err != nil {
 			return nil, fmt.Errorf("kit not installed: %w (run muster install)", err)
-		}
-	}
-
-	projectDir := opts.ProjectDir
-	if projectDir == "" {
-		projectDir, err = os.Getwd()
-		if err != nil {
-			return nil, err
 		}
 	}
 
@@ -62,49 +51,30 @@ func Run(opts Options) (*Result, error) {
 		return nil, fmt.Errorf("no harness CLIs found on PATH; install a CLI, pass --harness <id>, or --all")
 	}
 
-	res := &Result{KitDir: kitDir, Project: projectDir}
+	res := &Result{KitDir: kitDir}
 	autoDetect := !opts.All && len(opts.Harnesses) == 0
 	for _, id := range ids {
 		h := harnessWiring{id: id}
 		if opts.Unlink {
-			if opts.Global {
-				if err := h.unlinkGlobal(opts.DryRun); err != nil {
-					return nil, fmt.Errorf("%s global unlink: %w", id, err)
-				}
-			}
-			if opts.Project {
-				if err := h.unlinkProject(projectDir, opts.DryRun); err != nil {
-					return nil, fmt.Errorf("%s project unlink: %w", id, err)
-				}
+			if err := h.unlinkGlobal(opts.DryRun); err != nil {
+				return nil, fmt.Errorf("%s unlink: %w", id, err)
 			}
 			continue
 		}
 		var targets []string
-		if opts.Global {
-			t, err := h.linkGlobal(kitDir, opts.DryRun)
-			if err != nil {
-				if autoDetect {
-					res.Skipped = append(res.Skipped, id+": "+err.Error())
-					continue
-				}
-				return nil, fmt.Errorf("%s global link: %w", id, err)
+		t, err := h.linkGlobal(kitDir, opts.DryRun)
+		if err != nil {
+			if autoDetect || errors.Is(err, errManualHarnessSetup) {
+				res.Skipped = append(res.Skipped, id+": "+err.Error())
+				continue
 			}
-			targets = append(targets, t...)
+			return nil, fmt.Errorf("%s harness link: %w", id, err)
 		}
-		if opts.Project {
-			t, err := h.linkProject(projectDir, kitDir, opts.DryRun)
-			if err != nil {
-				return nil, fmt.Errorf("%s project link: %w", id, err)
-			}
-			targets = append(targets, t...)
-		}
+		targets = append(targets, t...)
 		res.Harnesses = append(res.Harnesses, HarnessLink{ID: id, Targets: targets})
 	}
 
 	if opts.Unlink {
-		if opts.Project && !opts.DryRun {
-			_ = unlinkProject(projectDir, false)
-		}
 		_ = removeLinkShims(opts.DryRun)
 		if !opts.DryRun {
 			_ = os.Remove(manifestPathSafe())
@@ -112,17 +82,11 @@ func Run(opts Options) (*Result, error) {
 		return res, nil
 	}
 
-	if opts.Project {
-		if _, err := linkProject(projectDir, kitDir, opts.DryRun); err != nil {
-			return nil, err
-		}
-	}
-
 	if err := installLinkShims(opts.DryRun); err != nil {
 		return nil, err
 	}
 	if !opts.DryRun {
-		m := &Manifest{KitDir: kitDir, Project: projectDir, Harnesses: res.Harnesses}
+		m := &Manifest{KitDir: kitDir, Harnesses: res.Harnesses}
 		if err := SaveManifest(m); err != nil {
 			return nil, err
 		}
