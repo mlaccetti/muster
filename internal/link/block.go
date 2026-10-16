@@ -1,7 +1,8 @@
 package link
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -10,14 +11,16 @@ const (
 	markerEnd   = "<!-- MUSTER_LINK_END -->"
 )
 
-func orchestratorBlock(kitDir string) string {
-	orch := kitDir + "/policy/orchestrator.md"
-	return fmt.Sprintf(`%s
-# Muster orchestrator (managed by muster link)
-
-You are the default orchestrator for this harness. Read and follow **%s**. Use native workers and ordinary conversational assignments and handoffs. Delegate bounded work, parallelize independent tasks, use gh-stacking for dependent pull requests, and add the exact @mergify queue GitHub comment after required checks are green. Wait on lifecycle events or callbacks rather than polling or sleeping, then integrate and verify end to end. Do small tasks directly when delegation adds overhead.
-%s
-`, markerStart, orch, markerEnd)
+func orchestratorBlock(kitDir string) (string, error) {
+	template, err := os.ReadFile(filepath.Join(kitDir, "link", "codex", "muster-orchestrator.md"))
+	if err != nil {
+		return "", err
+	}
+	rendered, err := renderOrchestrator(kitDir, "codex", template)
+	if err != nil {
+		return "", err
+	}
+	return string(rendered), nil
 }
 
 func upsertManagedBlock(existing string, block string) string {

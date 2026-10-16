@@ -1,6 +1,6 @@
 # Linking harnesses
 
-`muster install` lays down the versioned **kit** (policy and harness entrypoints). **`muster link`** connects those entrypoints to harness-wide user configuration and selects Muster as the default orchestrator where the harness supports that setting. Link and unlink never write into the current repository.
+`muster install` lays down the versioned **kit** (shared policy, small harness adapters, and native templates). **`muster link`** composes the shared policy with each adapter, renders the native orchestrator instructions, and connects them to harness-wide user configuration. Link and unlink never write into the current repository.
 
 ## Behavior
 
@@ -19,10 +19,10 @@ State for successfully linked harnesses is recorded in `$MUSTER_HOME/link-manife
 |----|------------------------|-------------------|
 | `claude` | `~/.claude/settings.json` → `"agent": "muster-orchestrator"` | `~/.claude/agents/muster-orchestrator.md` |
 | `codex` | `~/.codex/AGENTS.md` (loaded for every Codex run) | `~/.codex/agents/muster-worker.toml` |
-| `cursor` | Add Muster policy to User Rules in Cursor Settings | Manual setup; the documented interface is Settings, with no supported CLI or file interface for configuring global User Rules |
+| `cursor` | User-scoped local plugin discovered from `~/.cursor/plugins/local/` | `~/.cursor/plugins/local/muster-orchestrator/` (always-applied global rule) |
 | `antigravity` (`agy`) | `~/.gemini/antigravity-cli/settings.json` → `"agent": "muster-orchestrator"` | `~/.gemini/config/agents/muster-orchestrator/agent.md`, `muster-worker/agent.md` |
 
-Codex's worker agent uses `gpt-6-luna` with `medium` reasoning effort. Muster reports Cursor as skipped because it cannot configure Cursor's global User Rules through a supported interface. To use Muster in Cursor, copy the contents of `muster kit path` + `/policy/orchestrator.md` into Cursor Settings → Rules → User Rules. Cursor's worker and event behavior depends on the capabilities exposed by the active session.
+Claude Code and Antigravity point to rendered orchestrator agents under the installed kit's `rendered/` directory. Codex receives the rendered prompt in its managed global `AGENTS.md` block. Cursor receives a rendered user-scoped local plugin rule. The source of truth is `kit/policy/orchestrator.md` plus one short adapter in `kit/policy/adapters/` per harness. Codex's worker agent uses `gpt-6-luna` with `medium` reasoning effort. Cursor discovers the generated local plugin after a restart or Developer: Reload Window. Local plugin imports can be disabled by a Cursor Enterprise administrator. Cursor's plan and to-do features are unavailable in Auto mode; worker and event behavior depends on the active session.
 
 ## Optional shims
 
@@ -54,7 +54,7 @@ codex debug prompt-input "Summarize the active Muster instructions"
 
 **Cursor**
 
-Confirm Muster's orchestrator policy appears under Cursor Settings → Rules → User Rules.
+Confirm `~/.cursor/plugins/local/muster-orchestrator/rules/muster-orchestrator.mdc` exists, then restart Cursor or run Developer: Reload Window. The rule should appear under the installed local plugin and apply to Agent chats.
 
 **agy**
 
@@ -64,8 +64,8 @@ jq -r '.agent' ~/.gemini/antigravity-cli/settings.json
 agy -p "Reply with your agent name only" --agent muster-orchestrator
 ```
 
-Re-run **`muster link`** after `muster install` upgrades the kit so symlinks target the active kit tree.
+Re-run **`muster link`** after `muster install` upgrades the kit so native instructions are rendered from the active kit and symlinks target its rendered agents.
 
 ## Testing without real harnesses
 
-Package and CLI tests use temporary homes to validate harness-wide configuration, worker definitions, preservation of existing settings, unlink behavior, and the Cursor Settings limitation. Tests never write into the caller's project directory.
+Package and CLI tests use temporary homes to validate shared-policy rendering, harness adapters, harness-wide configuration, worker definitions, preservation of existing settings, unlink behavior, and the generated Cursor local plugin. Tests never write into the caller's project directory.

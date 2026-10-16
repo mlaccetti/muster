@@ -36,6 +36,10 @@ func verifyHarness(id, kitDir string, targets []string) []string {
 
 func verifySymlinkToKit(path, kitDir string, parts ...string) string {
 	want := kitLinkFile(kitDir, parts...)
+	return verifySymlinkToTarget(path, want)
+}
+
+func verifySymlinkToTarget(path, want string) string {
 	if _, err := os.Lstat(path); err != nil {
 		return path + ": missing"
 	}
@@ -56,7 +60,10 @@ func verifyClaude(kitDir string) []string {
 	}
 	dir := filepath.Join(home, ".claude")
 	var issues []string
-	if msg := verifySymlinkToKit(filepath.Join(dir, "agents", orchestratorAgentName+".md"), kitDir, "claude", orchestratorAgentName+".md"); msg != "" {
+	if msg := verifySymlinkToTarget(filepath.Join(dir, "agents", orchestratorAgentName+".md"), filepath.Join(kitDir, "rendered", "claude", "muster-orchestrator.md")); msg != "" {
+		issues = append(issues, msg)
+	}
+	if msg := verifyRenderedOrchestrator(kitDir, "claude", filepath.Join("link", "claude", orchestratorAgentName+".md")); msg != "" {
 		issues = append(issues, msg)
 	}
 	data, err := os.ReadFile(filepath.Join(dir, "settings.json"))
@@ -77,15 +84,13 @@ func verifyCodex(kitDir string, targets []string) []string {
 		if msg := verifySymlinkToKit(globalAgent, kitDir, "codex", workerAgentName+".config.toml"); msg != "" {
 			issues = append(issues, msg)
 		}
-		if data, err := os.ReadFile(globalInstructions); err != nil || !strings.Contains(string(data), markerStart) {
+		block, blockErr := orchestratorBlock(kitDir)
+		data, err := os.ReadFile(globalInstructions)
+		if blockErr != nil || err != nil || !strings.Contains(string(data), block) {
 			issues = append(issues, globalInstructions+": muster orchestrator instructions missing")
 		}
 	}
 	return issues
-}
-
-func verifyCursor(_ string, _ []string) []string {
-	return []string{"cursor: global User Rules must be configured in Cursor Settings; Muster cannot configure them through a supported CLI or file interface"}
 }
 
 func hasTarget(targets []string, want string) bool {
@@ -103,7 +108,10 @@ func verifyAgy(kitDir string) []string {
 		return []string{err.Error()}
 	}
 	var issues []string
-	if msg := verifySymlinkToKit(filepath.Join(root, orchestratorAgentName, "agent.md"), kitDir, "agy", orchestratorAgentName, "agent.md"); msg != "" {
+	if msg := verifySymlinkToTarget(filepath.Join(root, orchestratorAgentName, "agent.md"), filepath.Join(kitDir, "rendered", "antigravity", "muster-orchestrator.md")); msg != "" {
+		issues = append(issues, msg)
+	}
+	if msg := verifyRenderedOrchestrator(kitDir, "antigravity", filepath.Join("link", "agy", orchestratorAgentName, "agent.md")); msg != "" {
 		issues = append(issues, msg)
 	}
 	settingsDir, err := agySettingsDir()

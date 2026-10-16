@@ -1,14 +1,13 @@
 # Claude Code projection
 
-Prefer **`muster link`** (see [linking.md](../linking.md)) so `~/.claude/settings.json` selects `muster-orchestrator` and agent definitions symlink into the installed kit.
+Prefer **`muster link`** (see [linking.md](../linking.md)) so `~/.claude/settings.json` selects `muster-orchestrator` and its rendered definition points to the active kit.
 
 Manual check:
 
 ```bash
-export KIT="$(muster kit path)"
 jq -r '.agent' ~/.claude/settings.json
 readlink ~/.claude/agents/muster-orchestrator.md
-# Policy: $KIT/policy/orchestrator.md
+# Rendered from policy/orchestrator.md and policy/adapters/claude.md
 ```
 
-Orchestrator delegates bounded work to **worker** subagents per `$KIT/policy/worker.md`. Keep assignments and handoffs conversational; no fixed format is required.
+The rendered agent combines the shared policy with Claude Code's native `Agent`, planning, task-list, question, and completion-notification controls. Claude workers use the harness's native model settings.

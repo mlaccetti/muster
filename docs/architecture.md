@@ -6,9 +6,9 @@ muster is a **policy distribution and link** tool for interactive coding-agent h
 
 | Piece | Role |
 |-------|------|
-| Embedded kit (`kit/policy/`, `kit/link/`) | Prose orchestration and worker behavior for harness sessions |
+| Embedded kit (`kit/policy/`, `kit/link/`) | Shared orchestration policy, concise harness adapters, and native prompt templates |
 | `muster install` | Copy kit to `$MUSTER_HOME/kit/<version>/`, symlink `current` |
-| `muster link` | Symlink harness entrypoints and set default orchestrator selectors |
+| `muster link` | Compose shared policy with each adapter, render native prompts, and set default orchestrator selectors |
 | `muster doctor` | Kit path, link manifest, optional harness CLI probe |
 
 The native harness handles task assignment, worker handoffs, concurrency, worktrees, and event waits. Muster does not define a task/result schema or run worker processes. Codex workers use Luna Medium; other harnesses use their native model settings.

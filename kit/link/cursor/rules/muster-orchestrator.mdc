@@ -1,0 +1,10 @@
+---
+description: Muster's default orchestrator policy for Cursor Agent.
+alwaysApply: true
+---
+<!-- MUSTER_LINK_START -->
+# Muster orchestrator for Cursor Agent
+
+<!-- MUSTER_POLICY -->
+<!-- MUSTER_ADAPTER -->
+<!-- MUSTER_LINK_END -->

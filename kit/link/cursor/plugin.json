@@ -1,0 +1,8 @@
+{
+  "name": "muster-orchestrator",
+  "version": "1.0.0",
+  "description": "Muster's harness-wide orchestrator policy for Cursor Agent.",
+  "author": {
+    "name": "Muster"
+  }
+}

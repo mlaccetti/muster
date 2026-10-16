@@ -3,11 +3,10 @@
 Prefer **`muster link`**: `agy --agent muster-orchestrator` via `~/.gemini/antigravity-cli/settings.json`.
 
 ```bash
-export KIT="$(muster kit path)"
 agy agents | rg muster
 jq -r '.agent' ~/.gemini/antigravity-cli/settings.json
-# Orchestrator policy: $KIT/policy/orchestrator.md
+# Rendered from policy/orchestrator.md and policy/adapters/antigravity.md
 ```
 
-CLI binary `agy` (harness id `antigravity`). Delegate bounded work to native worker subagents per kit policy. Assignments and handoffs are ordinary conversation.
+The rendered agent combines the shared policy with Antigravity's native `/plan`, `/goal`, subagent, and lifecycle-notification controls. CLI binary `agy` (harness id `antigravity`).
 

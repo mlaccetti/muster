@@ -46,7 +46,7 @@ func TestLinkClaudeHarnessWide(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := filepath.Join(kitDir, "link", "claude", orchestratorAgentName+".md")
+	want := filepath.Join(kitDir, "rendered", "claude", "muster-orchestrator.md")
 	if target != want {
 		t.Fatalf("agent link %s != %s", target, want)
 	}
@@ -92,17 +92,37 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	if err != nil || !strings.Contains(string(globalAgents), markerStart) {
 		t.Fatalf("codex global instructions: %v %s", err, globalAgents)
 	}
-	if _, err := os.Stat(filepath.Join(home, ".cursor", "rules", "muster-orchestrator.mdc")); !os.IsNotExist(err) {
-		t.Fatalf("Cursor global rules are not a supported filesystem target; got err %v", err)
+	for _, required := range []string{"# Muster orchestrator policy", "## Codex controls", "Use `/goal`"} {
+		if !strings.Contains(string(globalAgents), required) {
+			t.Errorf("Codex instructions missing composed section %q", required)
+		}
 	}
-	if len(res.Skipped) != 1 || !strings.Contains(res.Skipped[0], "Cursor Settings") {
-		t.Fatalf("Cursor setup limitation should be reported: %+v", res.Skipped)
+	cursorPlugin := filepath.Join(home, ".cursor", "plugins", "local", "muster-orchestrator")
+	for _, path := range []string{
+		filepath.Join(cursorPlugin, ".cursor-plugin", "plugin.json"),
+		filepath.Join(cursorPlugin, "rules", "muster-orchestrator.mdc"),
+	} {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("Cursor plugin file %s: %v", path, err)
+		}
+	}
+	cursorRule, err := os.ReadFile(filepath.Join(cursorPlugin, "rules", "muster-orchestrator.mdc"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, required := range []string{"alwaysApply: true", "Use Cursor's native Plan mode", "Use a native plan or TODO list"} {
+		if !strings.Contains(string(cursorRule), required) {
+			t.Errorf("Cursor rule missing %q", required)
+		}
+	}
+	if len(res.Skipped) != 0 {
+		t.Fatalf("supported harnesses should not be skipped: %+v", res.Skipped)
 	}
 	manifest, err := LoadManifest()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(manifest.Harnesses) != 2 {
+	if len(manifest.Harnesses) != 3 {
 		t.Fatalf("manifest should include only configured harnesses: %+v", manifest.Harnesses)
 	}
 	agyAgent := filepath.Join(home, ".gemini", "config", "agents", orchestratorAgentName, "agent.md")
@@ -112,6 +132,47 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	agySettings := filepath.Join(home, ".gemini", "antigravity-cli", "settings.json")
 	if _, err := os.Stat(agySettings); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRenderedOrchestratorsComposeSharedPolicyAndHarnessAdapter(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("MUSTER_HOME", filepath.Join(home, "muster"))
+	kitDir, err := kit.Install()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	templates := map[string]string{
+		"claude":      filepath.Join("link", "claude", "muster-orchestrator.md"),
+		"codex":       filepath.Join("link", "codex", "muster-orchestrator.md"),
+		"cursor":      filepath.Join("link", "cursor", "rules", "muster-orchestrator.mdc"),
+		"antigravity": filepath.Join("link", "agy", "muster-orchestrator", "agent.md"),
+	}
+	for harness, template := range templates {
+		t.Run(harness, func(t *testing.T) {
+			source, err := os.ReadFile(filepath.Join(kitDir, template))
+			if err != nil {
+				t.Fatal(err)
+			}
+			rendered, err := renderOrchestrator(kitDir, harness, source)
+			if err != nil {
+				t.Fatal(err)
+			}
+			body := string(rendered)
+			if !strings.Contains(body, "# Muster orchestrator policy") || strings.Contains(body, policyMarker) || strings.Contains(body, adapterMarker) {
+				t.Fatalf("shared policy was not composed cleanly: %s", body)
+			}
+			if !strings.Contains(body, "## "+map[string]string{
+				"claude":      "Claude Code controls",
+				"codex":       "Codex controls",
+				"cursor":      "Cursor controls",
+				"antigravity": "Antigravity controls",
+			}[harness]) {
+				t.Fatalf("%s adapter missing from rendered prompt", harness)
+			}
+		})
 	}
 }
 
@@ -162,8 +223,8 @@ func TestLinkAllWithoutGlobalPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(res.Harnesses) != 3 || len(res.Skipped) != 1 {
-		t.Fatalf("expected three configured harnesses and Cursor Settings guidance, got %+v", res)
+	if len(res.Harnesses) != 4 || len(res.Skipped) != 0 {
+		t.Fatalf("expected four configured harnesses with no skipped setup, got %+v", res)
 	}
 }
 
@@ -180,8 +241,11 @@ func TestClaudeSettingsRestoreOnUnlink(t *testing.T) {
 	}
 	kitDir := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(kitDir, "link", "claude"), 0o755)
-	_ = os.WriteFile(filepath.Join(kitDir, "link", "claude", orchestratorAgentName+".md"), []byte("---\nname: x\n---\n"), 0o644)
+	_ = os.MkdirAll(filepath.Join(kitDir, "policy", "adapters"), 0o755)
+	_ = os.WriteFile(filepath.Join(kitDir, "link", "claude", orchestratorAgentName+".md"), []byte("---\nname: x\n---\n<!-- MUSTER_POLICY -->\n<!-- MUSTER_ADAPTER -->\n"), 0o644)
 	_ = os.WriteFile(filepath.Join(kitDir, "link", "claude", workerAgentName+".md"), []byte("---\nname: y\n---\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(kitDir, "policy", "orchestrator.md"), []byte("# Shared policy\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(kitDir, "policy", "adapters", "claude.md"), []byte("# Claude adapter\n"), 0o644)
 	if _, err := linkClaudeAgentWiring(claudeDir, kitDir, false); err != nil {
 		t.Fatal(err)
 	}
