@@ -46,7 +46,7 @@ func TestLinkClaudeHarnessWide(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := filepath.Join(kitDir, "link", "claude", orchestratorAgentName+".md")
+	want := filepath.Join(kitDir, "rendered", "claude", "muster-orchestrator.md")
 	if target != want {
 		t.Fatalf("agent link %s != %s", target, want)
 	}
@@ -92,6 +92,11 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	if err != nil || !strings.Contains(string(globalAgents), markerStart) {
 		t.Fatalf("codex global instructions: %v %s", err, globalAgents)
 	}
+	for _, required := range []string{"# Muster orchestrator policy", "## Codex controls", "Use `/goal`"} {
+		if !strings.Contains(string(globalAgents), required) {
+			t.Errorf("Codex instructions missing composed section %q", required)
+		}
+	}
 	cursorPlugin := filepath.Join(home, ".cursor", "plugins", "local", "muster-orchestrator")
 	for _, path := range []string{
 		filepath.Join(cursorPlugin, ".cursor-plugin", "plugin.json"),
@@ -127,6 +132,47 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	agySettings := filepath.Join(home, ".gemini", "antigravity-cli", "settings.json")
 	if _, err := os.Stat(agySettings); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRenderedOrchestratorsComposeSharedPolicyAndHarnessAdapter(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("MUSTER_HOME", filepath.Join(home, "muster"))
+	kitDir, err := kit.Install()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	templates := map[string]string{
+		"claude":      filepath.Join("link", "claude", "muster-orchestrator.md"),
+		"codex":       filepath.Join("link", "codex", "muster-orchestrator.md"),
+		"cursor":      filepath.Join("link", "cursor", "rules", "muster-orchestrator.mdc"),
+		"antigravity": filepath.Join("link", "agy", "muster-orchestrator", "agent.md"),
+	}
+	for harness, template := range templates {
+		t.Run(harness, func(t *testing.T) {
+			source, err := os.ReadFile(filepath.Join(kitDir, template))
+			if err != nil {
+				t.Fatal(err)
+			}
+			rendered, err := renderOrchestrator(kitDir, harness, source)
+			if err != nil {
+				t.Fatal(err)
+			}
+			body := string(rendered)
+			if !strings.Contains(body, "# Muster orchestrator policy") || strings.Contains(body, policyMarker) || strings.Contains(body, adapterMarker) {
+				t.Fatalf("shared policy was not composed cleanly: %s", body)
+			}
+			if !strings.Contains(body, "## "+map[string]string{
+				"claude":      "Claude Code controls",
+				"codex":       "Codex controls",
+				"cursor":      "Cursor controls",
+				"antigravity": "Antigravity controls",
+			}[harness]) {
+				t.Fatalf("%s adapter missing from rendered prompt", harness)
+			}
+		})
 	}
 }
 
@@ -195,8 +241,11 @@ func TestClaudeSettingsRestoreOnUnlink(t *testing.T) {
 	}
 	kitDir := t.TempDir()
 	_ = os.MkdirAll(filepath.Join(kitDir, "link", "claude"), 0o755)
-	_ = os.WriteFile(filepath.Join(kitDir, "link", "claude", orchestratorAgentName+".md"), []byte("---\nname: x\n---\n"), 0o644)
+	_ = os.MkdirAll(filepath.Join(kitDir, "policy", "adapters"), 0o755)
+	_ = os.WriteFile(filepath.Join(kitDir, "link", "claude", orchestratorAgentName+".md"), []byte("---\nname: x\n---\n<!-- MUSTER_POLICY -->\n<!-- MUSTER_ADAPTER -->\n"), 0o644)
 	_ = os.WriteFile(filepath.Join(kitDir, "link", "claude", workerAgentName+".md"), []byte("---\nname: y\n---\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(kitDir, "policy", "orchestrator.md"), []byte("# Shared policy\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(kitDir, "policy", "adapters", "claude.md"), []byte("# Claude adapter\n"), 0o644)
 	if _, err := linkClaudeAgentWiring(claudeDir, kitDir, false); err != nil {
 		t.Fatal(err)
 	}

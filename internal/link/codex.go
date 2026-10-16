@@ -43,7 +43,11 @@ func linkCodexGlobal(kitDir string, dryRun bool) ([]string, error) {
 	}
 
 	globalAgents := filepath.Join(dir, "AGENTS.md")
-	if err := patchFile(globalAgents, func(s string) string { return upsertManagedBlock(s, orchestratorBlock(kitDir)) }, dryRun); err != nil {
+	block, err := orchestratorBlock(kitDir)
+	if err != nil {
+		return nil, err
+	}
+	if err := patchFile(globalAgents, func(s string) string { return upsertManagedBlock(s, block) }, dryRun); err != nil {
 		return nil, err
 	}
 	touched = append(touched, globalAgents)

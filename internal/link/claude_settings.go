@@ -25,7 +25,7 @@ func linkClaudeAgentWiring(claudeDir, kitDir string, dryRun bool) ([]string, err
 	var touched []string
 
 	orchPath := filepath.Join(agentsDir, orchestratorAgentName+".md")
-	if err := linkKitFileDryRun(orchPath, dryRun, kitDir, "claude", orchestratorAgentName+".md"); err != nil {
+	if err := linkRenderedOrchestrator(orchPath, kitDir, "claude", filepath.Join("link", "claude", orchestratorAgentName+".md"), dryRun); err != nil {
 		return nil, err
 	}
 	touched = append(touched, orchPath)

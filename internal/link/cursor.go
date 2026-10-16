@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 const cursorManagedMarker = "muster-managed-plugin-v1\n"
@@ -28,14 +27,10 @@ func cursorPluginFiles(kitDir string) (manifest, rule []byte, err error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	policy, err := os.ReadFile(filepath.Join(kitDir, "policy", "orchestrator.md"))
+	rule, err = renderOrchestrator(kitDir, "cursor", template)
 	if err != nil {
 		return nil, nil, err
 	}
-	if !bytes.Contains(template, []byte("<!-- MUSTER_POLICY -->")) {
-		return nil, nil, fmt.Errorf("cursor rule template is missing the policy insertion marker")
-	}
-	rule = []byte(strings.Replace(string(template), "<!-- MUSTER_POLICY -->", string(policy), 1))
 	return manifest, rule, nil
 }
 

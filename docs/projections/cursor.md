@@ -1,6 +1,6 @@
 # Cursor Agent projection
 
-`muster link` installs the Muster orchestrator as a user-scoped Cursor local plugin under `~/.cursor/plugins/local/muster-orchestrator/`. Cursor Agent resolves as `cursor-agent`.
+`muster link` composes the shared policy with `kit/policy/adapters/cursor.md` and installs the rendered orchestrator as a user-scoped Cursor local plugin under `~/.cursor/plugins/local/muster-orchestrator/`. Cursor Agent resolves as `cursor-agent`.
 
 After linking or upgrading, restart Cursor or run Developer: Reload Window. Cursor discovers local plugins after reload when local plugin imports are allowed; Enterprise administrators can disable local plugin imports.
 

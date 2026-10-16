@@ -29,7 +29,7 @@ func linkAntigravityGlobal(kitDir string, dryRun bool) ([]string, error) {
 	var touched []string
 
 	orchAgent := filepath.Join(agentsRoot, orchestratorAgentName, "agent.md")
-	if err := linkKitFileDryRun(orchAgent, dryRun, kitDir, "agy", orchestratorAgentName, "agent.md"); err != nil {
+	if err := linkRenderedOrchestrator(orchAgent, kitDir, "antigravity", filepath.Join("link", "agy", orchestratorAgentName, "agent.md"), dryRun); err != nil {
 		return nil, err
 	}
 	touched = append(touched, orchAgent)
