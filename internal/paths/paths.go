@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-const KitVersion = "v0.3.0"
+const KitVersion = "v0.4.0"
 
 func Home() (string, error) {
 	if v := os.Getenv("MUSTER_HOME"); v != "" {
