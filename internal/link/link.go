@@ -1,7 +1,6 @@
 package link
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -64,7 +63,7 @@ func Run(opts Options) (*Result, error) {
 		var targets []string
 		t, err := h.linkGlobal(kitDir, opts.DryRun)
 		if err != nil {
-			if autoDetect || errors.Is(err, errManualHarnessSetup) {
+			if autoDetect {
 				res.Skipped = append(res.Skipped, id+": "+err.Error())
 				continue
 			}

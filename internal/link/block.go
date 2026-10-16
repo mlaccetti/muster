@@ -16,6 +16,8 @@ func orchestratorBlock(kitDir string) string {
 # Muster orchestrator (managed by muster link)
 
 You are the default orchestrator for this harness. Read and follow **%s**. Use native workers and ordinary conversational assignments and handoffs. Delegate bounded work, parallelize independent tasks, use gh-stacking for dependent pull requests, and add the exact @mergify queue GitHub comment after required checks are green. Wait on lifecycle events or callbacks rather than polling or sleeping, then integrate and verify end to end. Do small tasks directly when delegation adds overhead.
+
+Use Codex's native Goal for an explicitly multi-turn objective with a verifiable finish line, and its native plan/task tracking for substantial work when available. A Goal is not a replacement for worker decomposition or evidence checks. Ask a focused question only when a material decision blocks progress.
 %s
 `, markerStart, orch, markerEnd)
 }

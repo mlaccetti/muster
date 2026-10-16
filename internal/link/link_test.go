@@ -92,17 +92,32 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	if err != nil || !strings.Contains(string(globalAgents), markerStart) {
 		t.Fatalf("codex global instructions: %v %s", err, globalAgents)
 	}
-	if _, err := os.Stat(filepath.Join(home, ".cursor", "rules", "muster-orchestrator.mdc")); !os.IsNotExist(err) {
-		t.Fatalf("Cursor global rules are not a supported filesystem target; got err %v", err)
+	cursorPlugin := filepath.Join(home, ".cursor", "plugins", "local", "muster-orchestrator")
+	for _, path := range []string{
+		filepath.Join(cursorPlugin, ".cursor-plugin", "plugin.json"),
+		filepath.Join(cursorPlugin, "rules", "muster-orchestrator.mdc"),
+	} {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("Cursor plugin file %s: %v", path, err)
+		}
 	}
-	if len(res.Skipped) != 1 || !strings.Contains(res.Skipped[0], "Cursor Settings") {
-		t.Fatalf("Cursor setup limitation should be reported: %+v", res.Skipped)
+	cursorRule, err := os.ReadFile(filepath.Join(cursorPlugin, "rules", "muster-orchestrator.mdc"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, required := range []string{"alwaysApply: true", "Use Cursor's native Plan mode", "Use a native plan or TODO list"} {
+		if !strings.Contains(string(cursorRule), required) {
+			t.Errorf("Cursor rule missing %q", required)
+		}
+	}
+	if len(res.Skipped) != 0 {
+		t.Fatalf("supported harnesses should not be skipped: %+v", res.Skipped)
 	}
 	manifest, err := LoadManifest()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(manifest.Harnesses) != 2 {
+	if len(manifest.Harnesses) != 3 {
 		t.Fatalf("manifest should include only configured harnesses: %+v", manifest.Harnesses)
 	}
 	agyAgent := filepath.Join(home, ".gemini", "config", "agents", orchestratorAgentName, "agent.md")
@@ -162,8 +177,8 @@ func TestLinkAllWithoutGlobalPaths(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(res.Harnesses) != 3 || len(res.Skipped) != 1 {
-		t.Fatalf("expected three configured harnesses and Cursor Settings guidance, got %+v", res)
+	if len(res.Harnesses) != 4 || len(res.Skipped) != 0 {
+		t.Fatalf("expected four configured harnesses with no skipped setup, got %+v", res)
 	}
 }
 

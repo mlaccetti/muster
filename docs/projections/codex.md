@@ -10,5 +10,5 @@ readlink ~/.codex/agents/muster-worker.toml
 codex debug prompt-input "Summarize the active Muster instructions"
 ```
 
-The `muster-worker` agent uses `gpt-6-luna` with `medium` reasoning effort. Assignments and handoffs remain ordinary conversation.
+The `muster-worker` agent uses `gpt-6-luna` with `medium` reasoning effort. For substantial multi-step work, use Codex's native plan/task tracking when available. Use a native Goal only when the user explicitly expects work to continue across turns; state a verifiable outcome and constraints. Ask the user only when a material decision blocks progress. Assignments and handoffs remain ordinary conversation.
 

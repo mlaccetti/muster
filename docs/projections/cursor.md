@@ -1,5 +1,7 @@
 # Cursor Agent projection
 
-Muster cannot configure Cursor's global User Rules through a supported CLI or file interface. Add the contents of Muster's `policy/orchestrator.md` to Cursor Settings → Rules → User Rules to make Muster the default orchestrator for Cursor.
+`muster link` installs the Muster orchestrator as a user-scoped Cursor local plugin under `~/.cursor/plugins/local/muster-orchestrator/`. Cursor Agent resolves as `cursor-agent`.
 
-Cursor Agent resolves as `cursor-agent`. Worker delegation and event-driven waiting depend on capabilities exposed by the active Cursor session; the projection policy asks the orchestrator to use only capabilities actually available.
+After linking or upgrading, restart Cursor or run Developer: Reload Window. Cursor discovers local plugins after reload when local plugin imports are allowed; Enterprise administrators can disable local plugin imports.
+
+Use Cursor's native Plan mode and to-do list for substantial multi-step work when the active mode supports them. Use native subagents for independent bounded work. Cursor documents that planning and to-dos are unavailable in Auto mode; in that mode, keep a short plan in the conversation. Follow the shared policy's prose handoffs and use only the lifecycle notifications exposed by the active session.

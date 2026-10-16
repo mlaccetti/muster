@@ -84,10 +84,6 @@ func verifyCodex(kitDir string, targets []string) []string {
 	return issues
 }
 
-func verifyCursor(_ string, _ []string) []string {
-	return []string{"cursor: global User Rules must be configured in Cursor Settings; Muster cannot configure them through a supported CLI or file interface"}
-}
-
 func hasTarget(targets []string, want string) bool {
 	for _, target := range targets {
 		if target == want {
