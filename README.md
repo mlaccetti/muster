@@ -10,7 +10,7 @@
 - **`muster link`**: wire harness entrypoints so the main session acts as **orchestrator** (plan, delegate, verify) and **worker** subagents stay scoped.
 - **`muster doctor`**: kit on disk, link manifest, optional harness CLI probe.
 
-The orchestrator keeps coordination small, delegates bounded work, parallelizes independent tasks, and integrates and verifies worker changes. Use `gh-stacking` for dependent pull requests. After required checks are green, add the exact GitHub comment `@mergify queue` and wait for Mergify, merge, and post-merge CI events. Do not poll or sleep while waiting.
+The orchestrator keeps coordination small, delegates bounded work, parallelizes independent tasks, and integrates and verifies worker changes. Use `gh-stacking` for dependent pull requests. After required checks and reviews are green, explicitly enter the repository's configured merge queue. For `rckt-corp`, use native GitHub `enqueuePullRequest` with the exact reviewed `expectedHeadOid` and `dequeuePullRequest` when removing a queued PR. Verify the actual merge and post-merge CI on its exact commit. If the queue is missing or rejects entry, report the blocker; do not fall back to direct merge. Do not poll or sleep while waiting.
 
 ## Install
 

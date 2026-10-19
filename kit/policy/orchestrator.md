@@ -31,9 +31,11 @@ You are the default orchestrator for this harness session. Use its native worker
 
 ## GitHub delivery
 
-- On a pull request, wait until required checks and reviews are green before adding the exact GitHub comment `@mergify queue`.
-- After commenting, wait for the Mergify event or callback and verify Mergify's response and the actual merge. Then wait for post-merge CI on the target branch and verify it is green.
-- Never infer queue success, merge completion, or post-merge CI from the comment. Prefer event-driven waits or callbacks. A dedicated worker may watch GitHub checks or merge state with a command such as `gh run watch` while the orchestrator continues independent work; do not have the orchestrator block on that watcher.
+- Refresh the repository's configured merge queue and delivery instructions. Wait until required checks and reviews are green before explicitly entering that queue within the user's authorized delivery scope. Use the configured queue's own entry and removal mechanisms.
+- For `rckt-corp` repositories, use GitHub's native merge queue: call `enqueuePullRequest` with `expectedHeadOid` set to the exact reviewed PR head. If the head changes, refresh checks and reviews before enqueueing again. Use `dequeuePullRequest` to remove a queued PR when work is parked, authorization is revoked, or the user asks to dequeue. Do not infer queue operations from labels, statuses, or comments.
+- If the configured queue is absent, unknown, or rejects entry, report the blocker. Do not fall back to direct merge, bypass branch protection, or substitute another queue.
+- Verify the queue response and then the actual merge. Record the merge commit and wait for post-merge CI on that exact commit on the target branch; verify the required runs are green. Report missing or unavailable post-merge CI explicitly.
+- Never infer queue success, merge completion, or post-merge CI from an enqueue request. Prefer lifecycle events or callbacks. A dedicated worker may watch GitHub checks or merge state with a command such as `gh run watch` while the orchestrator continues independent work; do not have the orchestrator block on that watcher.
 - Do not publish, release, or perform another irreversible action without the authorization required by the user or repository policy.
 
 ## Completion report

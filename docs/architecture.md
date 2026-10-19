@@ -13,7 +13,7 @@ muster is a **policy distribution and link** tool for interactive coding-agent h
 
 The native harness handles task assignment, worker handoffs, concurrency, worktrees, and event waits. Muster does not define a task/result schema or run worker processes. Codex workers use Luna Medium; other harnesses use their native model settings.
 
-The orchestrator should delegate bounded tasks, parallelize independent work, use `gh-stacking` for dependent pull requests, and wait on lifecycle events or callbacks rather than polling. When checks are green, it adds the exact `@mergify queue` GitHub comment and verifies the subsequent Mergify, merge, and post-merge CI events.
+The orchestrator should delegate bounded tasks, parallelize independent work, use `gh-stacking` for dependent pull requests, and wait on lifecycle events or callbacks rather than polling. After required checks and reviews pass, it explicitly enters the repository's configured merge queue and verifies the queue response, actual merge, and post-merge CI on the exact merge commit. For `rckt-corp`, this means GitHub's native `enqueuePullRequest` with `expectedHeadOid` matching the reviewed PR head, and `dequeuePullRequest` for removal. A missing queue or rejected enqueue is a blocker, with no direct-merge fallback. Queue labels, statuses, comments, and accepted enqueue requests are not evidence that a merge occurred.
 
 ## Related
 
