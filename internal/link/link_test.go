@@ -331,6 +331,69 @@ func TestCodexConfigMalformedInputFailsWithoutMutation(t *testing.T) {
 	}
 }
 
+func TestCodexConfigSymlinkIsPreservedAcrossLinkAndUnlink(t *testing.T) {
+	root := t.TempDir()
+	configTarget := filepath.Join(root, "dotfiles", "codex.toml")
+	if err := os.MkdirAll(filepath.Dir(configTarget), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	initial := "[agents]\nmax_threads = 3\nmodel = \"gpt-6.1-sol\"\n"
+	if err := os.WriteFile(configTarget, []byte(initial), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	configLink := filepath.Join(root, "codex", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(configLink), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(configTarget, configLink); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchCodexAgentConfig(configLink, false); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Lstat(configLink)
+	if err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("config symlink replaced: info=%v err=%v", info, err)
+	}
+	target, err := filepath.EvalSymlinks(configLink)
+	wantTarget, wantErr := filepath.EvalSymlinks(configTarget)
+	if err != nil || wantErr != nil || target != wantTarget {
+		t.Fatalf("config symlink target changed: target=%s err=%v", target, err)
+	}
+	info, err = os.Stat(configTarget)
+	if err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("target mode changed: info=%v err=%v", info, err)
+	}
+	if err := unlinkCodexAgentConfig(configLink, false); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(configTarget)
+	if err != nil || string(data) != initial {
+		t.Fatalf("target settings were not restored: %v %s", err, data)
+	}
+	if _, err := os.Lstat(configLink); err != nil {
+		t.Fatalf("config symlink missing after unlink: %v", err)
+	}
+}
+
+func TestCodexConfigDanglingSymlinkFailsWithoutReplacement(t *testing.T) {
+	root := t.TempDir()
+	configLink := filepath.Join(root, "config.toml")
+	if err := os.Symlink(filepath.Join(root, "missing.toml"), configLink); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchCodexAgentConfig(configLink, false); err == nil {
+		t.Fatal("expected dangling config symlink error")
+	}
+	info, err := os.Lstat(configLink)
+	if err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("dangling symlink was replaced: info=%v err=%v", info, err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "missing.toml")); !os.IsNotExist(err) {
+		t.Fatalf("dangling target was unexpectedly created: %v", err)
+	}
+}
+
 func TestCodexLinkPreflightDoesNotReplaceWorkerWhenConfigIsInvalid(t *testing.T) {
 	home := t.TempDir()
 	codexDir := filepath.Join(home, ".codex")

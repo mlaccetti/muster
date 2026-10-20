@@ -178,6 +178,10 @@ func savedConfigState(doc *codexDocument) codexConfigState {
 }
 
 func patchCodexAgentConfig(path string, dryRun bool) error {
+	writePath, mode, err := resolveCodexConfigTarget(path)
+	if err != nil {
+		return err
+	}
 	data, err := os.ReadFile(path)
 	if err != nil && !os.IsNotExist(err) {
 		return err
@@ -228,16 +232,17 @@ func patchCodexAgentConfig(path string, dryRun bool) error {
 	if err := writeFileAtomic(statePath, append(stateBytes, '\n'), 0o600); err != nil {
 		return err
 	}
-	mode := os.FileMode(0o600)
-	if info, err := os.Stat(path); err == nil {
-		mode = info.Mode().Perm()
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-	return writeFileAtomic(path, []byte(patched), mode)
+	return writeFileAtomic(writePath, []byte(patched), mode)
 }
 
 func unlinkCodexAgentConfig(path string, dryRun bool) error {
+	writePath, mode, err := resolveCodexConfigTarget(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil
@@ -272,11 +277,7 @@ func unlinkCodexAgentConfig(path string, dryRun bool) error {
 		if _, err := parseCodexDocument(cleaned); err != nil {
 			return fmt.Errorf("legacy Codex config cleanup would produce invalid TOML: %w", err)
 		}
-		info, err := os.Stat(path)
-		if err != nil {
-			return err
-		}
-		return writeFileAtomic(path, []byte(cleaned), info.Mode().Perm())
+		return writeFileAtomic(writePath, []byte(cleaned), mode)
 	}
 	updates, removals := map[string]map[string]string{}, map[string][]string{}
 	for section, fields := range managedCodexValues {
@@ -310,17 +311,38 @@ func unlinkCodexAgentConfig(path string, dryRun bool) error {
 	if dryRun {
 		return nil
 	}
-	info, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if err := writeFileAtomic(path, []byte(patched), info.Mode().Perm()); err != nil {
+	if err := writeFileAtomic(writePath, []byte(patched), mode); err != nil {
 		return err
 	}
 	if err := os.Remove(statePath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	return nil
+}
+
+func resolveCodexConfigTarget(path string) (string, os.FileMode, error) {
+	info, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return path, 0o600, nil
+	}
+	if err != nil {
+		return "", 0, err
+	}
+	target := path
+	if info.Mode()&os.ModeSymlink != 0 {
+		target, err = filepath.EvalSymlinks(path)
+		if err != nil {
+			return "", 0, fmt.Errorf("resolve Codex config symlink %s: %w", path, err)
+		}
+		info, err = os.Stat(target)
+		if err != nil {
+			return "", 0, err
+		}
+	}
+	if !info.Mode().IsRegular() {
+		return "", 0, fmt.Errorf("Codex config %s is not a regular file", path)
+	}
+	return target, info.Mode().Perm(), nil
 }
 
 func cleanLegacyCodexConfig(source string) string {
