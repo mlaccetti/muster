@@ -64,3 +64,33 @@ func TestCLI_doctorSkipsProbe(t *testing.T) {
 		t.Fatalf("expected skipped probe: %s", out.String())
 	}
 }
+
+func TestCLI_doctorLiveRejectsSelfReportOnly(t *testing.T) {
+	applyStubEnv(t)
+	codex := filepath.Join(t.TempDir(), "codex")
+	if err := os.WriteFile(codex, []byte("#!/bin/sh\nprintf '{\\\"type\\\":\\\"message\\\",\\\"text\\\":\\\"ok\\\"}\\n'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if cli.RunForTest([]string{"doctor", "--live", "--codex-bin", codex}, &out, &out) == 0 {
+		t.Fatalf("self-reporting stub unexpectedly passed: %s", out.String())
+	}
+	if strings.Contains(out.String(), "live: ok") {
+		t.Fatalf("self-reporting stub reported success: %s", out.String())
+	}
+}
+
+func TestCLI_doctorLiveHonorsTimeout(t *testing.T) {
+	applyStubEnv(t)
+	codex := filepath.Join(t.TempDir(), "codex")
+	if err := os.WriteFile(codex, []byte("#!/bin/sh\nsleep 5\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if cli.RunForTest([]string{"doctor", "--live", "--live-timeout", "30ms", "--codex-bin", codex}, &out, &out) == 0 {
+		t.Fatalf("timed out stub unexpectedly passed: %s", out.String())
+	}
+	if !strings.Contains(out.String(), "timed out") {
+		t.Fatalf("expected timeout diagnostic: %s", out.String())
+	}
+}
