@@ -60,3 +60,42 @@ func linkKitFileDryRun(dest string, dryRun bool, kitDir string, kitParts ...stri
 	}
 	return linkKitFile(dest, kitDir, kitParts...)
 }
+
+func linkCodexWorkerAgent(dest, kitDir string, dryRun bool) error {
+	if dryRun {
+		return nil
+	}
+	source := kitLinkFile(kitDir, "codex", workerAgentName+".config.toml")
+	data, err := os.ReadFile(source)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return err
+	}
+	return writeFileAtomic(dest, data, 0o644)
+}
+
+func writeFileAtomic(path string, data []byte, mode os.FileMode) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".muster-link-*")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+	if err := tmp.Chmod(mode); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, path)
+}

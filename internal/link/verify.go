@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	toml "github.com/pelletier/go-toml/v2"
 )
 
 // VerifyReports returns human-readable problems for linked harnesses (empty if ok).
@@ -81,7 +83,7 @@ func verifyCodex(kitDir string, targets []string) []string {
 	globalAgent := filepath.Join(dir, "agents", workerAgentName+".toml")
 	globalInstructions := filepath.Join(dir, "AGENTS.md")
 	if hasTarget(targets, globalAgent) {
-		if msg := verifySymlinkToKit(globalAgent, kitDir, "codex", workerAgentName+".config.toml"); msg != "" {
+		if msg := verifyCodexWorkerAgent(globalAgent, kitDir); msg != "" {
 			issues = append(issues, msg)
 		}
 		block, blockErr := orchestratorBlock(kitDir)
@@ -93,13 +95,39 @@ func verifyCodex(kitDir string, targets []string) []string {
 			issues = append(issues, globalInstructions+": contains contradictory sequential delegation mapping")
 		}
 		config, configErr := os.ReadFile(filepath.Join(dir, "config.toml"))
-		if configErr != nil || !strings.Contains(string(config), `default_subagent_model = "gpt-6-luna"`) ||
-			!strings.Contains(string(config), `default_subagent_reasoning_effort = "medium"`) ||
-			!strings.Contains(string(config), `config_file = "`+globalAgent+`"`) {
-			issues = append(issues, filepath.Join(dir, "config.toml")+": muster subagent defaults or worker registration missing")
+		if configErr != nil || !verifyCodexRoutingConfig(config) {
+			issues = append(issues, filepath.Join(dir, "config.toml")+": muster subagent defaults missing or invalid")
 		}
 	}
 	return issues
+}
+
+func verifyCodexRoutingConfig(data []byte) bool {
+	var config map[string]any
+	if err := toml.Unmarshal(data, &config); err != nil {
+		return false
+	}
+	agents, ok := config["agents"].(map[string]any)
+	return ok && agents["default_subagent_model"] == "gpt-6-luna" && agents["default_subagent_reasoning_effort"] == "medium"
+}
+
+func verifyCodexWorkerAgent(path, kitDir string) string {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return path + ": missing"
+	}
+	if !info.Mode().IsRegular() {
+		return path + ": custom agent must be a regular file"
+	}
+	want, err := os.ReadFile(kitLinkFile(kitDir, "codex", workerAgentName+".config.toml"))
+	if err != nil {
+		return err.Error()
+	}
+	got, err := os.ReadFile(path)
+	if err != nil || string(got) != string(want) {
+		return path + ": stale custom agent copy"
+	}
+	return ""
 }
 
 func hasTarget(targets []string, want string) bool {
