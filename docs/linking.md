@@ -22,7 +22,7 @@ State for successfully linked harnesses is recorded in `$MUSTER_HOME/link-manife
 | `cursor` | User-scoped local plugin discovered from `~/.cursor/plugins/local/` | `~/.cursor/plugins/local/muster-orchestrator/` (always-applied global rule) |
 | `antigravity` (`agy`) | `~/.gemini/antigravity-cli/settings.json` → `"agent": "muster-orchestrator"` | `~/.gemini/config/agents/muster-orchestrator/agent.md`, `muster-worker/agent.md` |
 
-Claude Code and Antigravity point to rendered orchestrator agents under the installed kit's `rendered/` directory. Codex receives the rendered prompt in its managed global `AGENTS.md` block. Cursor receives a rendered user-scoped local plugin rule. The source of truth is `kit/policy/orchestrator.md` plus one short adapter in `kit/policy/adapters/` per harness. Codex's worker agent uses `gpt-6-luna` with `medium` reasoning effort. Cursor discovers the generated local plugin after a restart or Developer: Reload Window. Local plugin imports can be disabled by a Cursor Enterprise administrator. Cursor's plan and to-do features are unavailable in Auto mode; worker and event behavior depends on the active session.
+Claude Code and Antigravity point to rendered orchestrator agents under the installed kit's `rendered/` directory. Codex receives the rendered prompt in its managed global `AGENTS.md` block and a regular-file copy of the worker definition in `~/.codex/agents/`. Re-running `muster link` replaces a legacy worker symlink with this copy. The Codex worker defaults to `gpt-6-luna` with `medium` reasoning effort; linking preserves the root session's selected model and effort. Cursor receives a rendered user-scoped local plugin rule. The source of truth is `kit/policy/orchestrator.md` plus one short adapter in `kit/policy/adapters/` per harness. Cursor discovers the generated local plugin after a restart or Developer: Reload Window. Local plugin imports can be disabled by a Cursor Enterprise administrator. Cursor's plan and to-do features are unavailable in Auto mode; worker and event behavior depends on the active session.
 
 ## Optional shims
 
@@ -48,7 +48,8 @@ readlink ~/.claude/agents/muster-orchestrator.md
 
 ```bash
 rg 'MUSTER_LINK_START|default orchestrator' ~/.codex/AGENTS.md
-readlink ~/.codex/agents/muster-worker.toml
+test -f ~/.codex/agents/muster-worker.toml && test ! -L ~/.codex/agents/muster-worker.toml
+rg 'model = "gpt-6-luna"|model_reasoning_effort = "medium"' ~/.codex/agents/muster-worker.toml
 codex debug prompt-input "Summarize the active Muster instructions"
 ```
 
@@ -64,7 +65,7 @@ jq -r '.agent' ~/.gemini/antigravity-cli/settings.json
 agy -p "Reply with your agent name only" --agent muster-orchestrator
 ```
 
-Re-run **`muster link`** after `muster install` upgrades the kit so native instructions are rendered from the active kit and symlinks target its rendered agents.
+Re-run **`muster link`** after `muster install` upgrades the kit so native instructions and worker definitions are refreshed from the active kit.
 
 ## Testing without real harnesses
 

@@ -1,14 +1,15 @@
 # Codex projection
 
-Use **`muster link`** to compose the shared orchestrator policy with Codex's native-control adapter and add the rendered prompt to Codex's global `AGENTS.md`. Linking preserves the root session's selected model and reasoning effort; it does not switch the main UI session's model. Choose a **Sol** model for the root when you want Sol orchestration. Muster registers its `muster-worker` native agent with the **Luna Medium** defaults, so delegated workers receive narrow assignments while the root keeps coordination.
+Use **`muster link`** to compose the shared orchestrator policy with Codex's native-control adapter and add the rendered prompt to Codex's global `AGENTS.md`. Linking preserves the root session's selected model and reasoning effort; it does not switch the main UI session's model. Choose a **Sol** model for the root when you want Sol orchestration. Muster installs its `muster-worker` native agent definition with the **Luna Medium** defaults, so delegated workers receive narrow assignments while the root keeps coordination.
 
-If Codex cannot load the registered custom role, the instructions also describe a built-in worker fallback. A fresh Codex session or app restart may be needed for newly linked or repaired agent definitions to replace roles cached by an existing session.
+Muster installs the worker definition as a regular file in `~/.codex/agents/`, which Codex can execute. Re-running `muster link` replaces an older symlink with the file. If a running session has cached an earlier definition, start a fresh session to pick up the linked file. The instructions also describe a built-in worker fallback if the custom role is unavailable.
 
 During `muster link`, Muster narrowly repairs the legacy Claude-compatibility mapping that could otherwise interfere with Codex worker selection. It does not change unrelated Claude configuration.
 
 ```bash
 rg 'MUSTER_LINK_START|default orchestrator' ~/.codex/AGENTS.md
-readlink ~/.codex/agents/muster-worker.toml
+test -f ~/.codex/agents/muster-worker.toml && test ! -L ~/.codex/agents/muster-worker.toml
+rg 'model = "gpt-6-luna"|model_reasoning_effort = "medium"' ~/.codex/agents/muster-worker.toml
 codex debug prompt-input "Summarize the active Muster instructions"
 ```
 
