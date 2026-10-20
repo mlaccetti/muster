@@ -47,6 +47,9 @@ func TestValidateLiveEvidenceFailsClosedForSpecificDefects(t *testing.T) {
 		{"wrong effort", "child model or reasoning effort was missing or unexpected", func(t *testing.T, f *evidenceFixture) {
 			replaceOnce(t, childPath(*f), `"effort":"medium"`, `"effort":"high"`)
 		}},
+		{"unsupported child role", "child agent role is unsupported", func(t *testing.T, f *evidenceFixture) {
+			replaceOnce(t, childPath(*f), `"agent_role":"muster-worker"`, `"agent_role":"custom-agent"`)
+		}},
 		{"child parent mismatch", "parent linkage is invalid", func(t *testing.T, f *evidenceFixture) {
 			replaceOnce(t, childPath(*f), `"parent_thread_id":"`+f.rootID+`"`, `"parent_thread_id":"00000000-0000-4000-8000-000000000099"`)
 		}},
@@ -116,6 +119,18 @@ func TestValidateLiveEvidenceFailsClosedForSpecificDefects(t *testing.T) {
 				t.Fatalf("expected error containing %q, got %v", tt.expected, err)
 			}
 		})
+	}
+}
+
+func TestValidateLiveEvidenceLabelsBuiltInWorkerFallback(t *testing.T) {
+	f := validFixture(t)
+	replaceOnce(t, childPath(f), `"agent_role":"muster-worker"`, `"agent_role":"worker"`)
+	got, err := ValidateLiveEvidence(f.events, f.rootPath, f.home, f.rootID, f.nonce)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Agent != "built-in worker" {
+		t.Fatalf("expected explicit fallback role, got %q", got.Agent)
 	}
 }
 

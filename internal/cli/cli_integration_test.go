@@ -94,3 +94,29 @@ func TestCLI_doctorLiveHonorsTimeout(t *testing.T) {
 		t.Fatalf("expected timeout diagnostic: %s", out.String())
 	}
 }
+
+func TestCLI_doctorLiveStopsOnOutputLimit(t *testing.T) {
+	for _, tc := range []struct{ name, redirect string }{
+		{name: "stdout"},
+		{name: "stderr", redirect: " >&2"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			applyStubEnv(t)
+			codex := filepath.Join(t.TempDir(), "codex")
+			script := "#!/bin/sh\nexec /usr/bin/head -c 8388608 /dev/zero" + tc.redirect + "\n"
+			if err := os.WriteFile(codex, []byte(script), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			var out bytes.Buffer
+			if cli.RunForTest([]string{"doctor", "--live", "--live-timeout", "10s", "--codex-bin", codex}, &out, &out) == 0 {
+				t.Fatalf("noisy stub unexpectedly passed: %s", out.String())
+			}
+			if !strings.Contains(out.String(), "exceeded the 4 MiB limit") {
+				t.Fatalf("expected output-limit diagnostic: %s", out.String())
+			}
+			if strings.Contains(out.String(), "timed out") {
+				t.Fatalf("output-limit cancellation was reported as a timeout: %s", out.String())
+			}
+		})
+	}
+}

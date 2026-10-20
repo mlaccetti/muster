@@ -21,29 +21,29 @@ func RootThreadID(events []byte) (string, error) {
 			}
 		}
 	}
-	return "", errors.New("Codex did not emit a root thread id")
+	return "", errors.New("codex did not emit a root thread id")
 }
 
 func ValidateLiveEvidence(events []byte, rootPath, home, rootID, nonce string) (LiveResult, error) {
 	var out LiveResult
 	stream := decodeLines(events)
 	if malformedJSONL(events) || hasFailure(stream) || !hasCompletion(stream) || ambiguousThreadIDs(stream, rootID) {
-		return out, errors.New("Codex root turn did not complete")
+		return out, errors.New("codex root turn did not complete")
 	}
 	root, err := readRecords(rootPath)
 	if err != nil {
 		return out, errors.New("could not read root session metadata")
 	}
 	if sessionID(root) != rootID {
-		return out, errors.New("Codex root session ID did not match the event stream")
+		return out, errors.New("codex root session ID did not match the event stream")
 	}
 	childID, rootTurnID, ok := delegation(root, rootID)
 	if !ok {
-		return out, errors.New("Codex root session contains missing or ambiguous native child delegation evidence")
+		return out, errors.New("codex root session contains missing or ambiguous native child delegation evidence")
 	}
 	rootModel, rootEffort, rootTurnOK := turnSettings(root, rootTurnID)
 	if !rootTurnOK || rootModel != "gpt-6.1-sol" || rootEffort == "" {
-		return out, errors.New("Codex root model evidence was missing or unexpected")
+		return out, errors.New("codex root model evidence was missing or unexpected")
 	}
 	childPath, err := findSession(home, childID)
 	if err != nil {
@@ -54,9 +54,13 @@ func ValidateLiveEvidence(events []byte, rootPath, home, rootID, nonce string) (
 		return out, errors.New("delegated child parent linkage is invalid")
 	}
 	model, effort, childTurnID, childTurnOK := completedChildTurn(child, nonce, rootTurnID)
-	agent := sessionAgentRole(child)
-	if agent == "" {
+	role := sessionAgentRole(child)
+	if role == "" {
 		return out, errors.New("delegated child agent role was not recorded")
+	}
+	agent, ok := supportedAgentRole(role)
+	if !ok {
+		return out, errors.New("delegated child agent role is unsupported")
 	}
 	if !childTurnOK {
 		return out, errors.New("delegated child did not complete with the check nonce")
@@ -66,6 +70,17 @@ func ValidateLiveEvidence(events []byte, rootPath, home, rootID, nonce string) (
 	}
 	out = LiveResult{RootID: rootID, ChildID: childID, RootTurnID: rootTurnID, ChildTurnID: childTurnID, Agent: agent, RootModel: rootModel, RootEffort: rootEffort, Model: model, Effort: effort}
 	return out, nil
+}
+
+func supportedAgentRole(role string) (string, bool) {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "muster-worker":
+		return "muster-worker", true
+	case "worker", "built-in worker":
+		return "built-in worker", true
+	default:
+		return "", false
+	}
 }
 
 func decodeLines(data []byte) []map[string]any {
@@ -130,11 +145,20 @@ func IsThreadID(id string) bool {
 			}
 			continue
 		}
-		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+		if !isHexDigit(r) {
 			return false
 		}
 	}
 	return true
+}
+
+func isHexDigit(r rune) bool {
+	switch {
+	case r >= '0' && r <= '9', r >= 'a' && r <= 'f', r >= 'A' && r <= 'F':
+		return true
+	default:
+		return false
+	}
 }
 
 func hasCompletion(events []map[string]any) bool {
