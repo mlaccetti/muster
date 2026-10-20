@@ -36,11 +36,6 @@ func verifyHarness(id, kitDir string, targets []string) []string {
 	}
 }
 
-func verifySymlinkToKit(path, kitDir string, parts ...string) string {
-	want := kitLinkFile(kitDir, parts...)
-	return verifySymlinkToTarget(path, want)
-}
-
 func verifySymlinkToTarget(path, want string) string {
 	if _, err := os.Lstat(path); err != nil {
 		return path + ": missing"

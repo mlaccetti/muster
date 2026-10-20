@@ -134,6 +134,7 @@ func lineStart(source string, offset int) int {
 	}
 	return 0
 }
+
 func lineEnd(source string, start int) int {
 	if start >= len(source) {
 		return len(source)
@@ -143,6 +144,7 @@ func lineEnd(source string, start int) int {
 	}
 	return len(source)
 }
+
 func sectionByName(doc *codexDocument, name string) *codexSection {
 	for i := range doc.sections {
 		if doc.sections[i].name == name && doc.sections[i].kind == tomlast.Table {
@@ -151,6 +153,7 @@ func sectionByName(doc *codexDocument, name string) *codexSection {
 	}
 	return nil
 }
+
 func assignmentsIn(doc *codexDocument, section, key string) []codexAssignment {
 	var out []codexAssignment
 	for _, a := range doc.assignments {
@@ -160,6 +163,7 @@ func assignmentsIn(doc *codexDocument, section, key string) []codexAssignment {
 	}
 	return out
 }
+
 func savedConfigState(doc *codexDocument) codexConfigState {
 	state := codexConfigState{Version: 1, Values: map[string]map[string]codexSavedValue{}}
 	for section, fields := range managedCodexValues {
@@ -217,7 +221,7 @@ func patchCodexAgentConfig(path string, dryRun bool) error {
 		return err
 	}
 	if _, err := parseCodexDocument(patched); err != nil {
-		return fmt.Errorf("Codex routing changes would produce invalid TOML: %w", err)
+		return fmt.Errorf("codex routing changes would produce invalid TOML: %w", err)
 	}
 	if dryRun {
 		return nil
@@ -306,7 +310,7 @@ func unlinkCodexAgentConfig(path string, dryRun bool) error {
 		return err
 	}
 	if _, err := parseCodexDocument(patched); err != nil {
-		return fmt.Errorf("Codex unlink would produce invalid TOML: %w", err)
+		return fmt.Errorf("codex unlink would produce invalid TOML: %w", err)
 	}
 	if dryRun {
 		return nil
@@ -340,7 +344,7 @@ func resolveCodexConfigTarget(path string) (string, os.FileMode, error) {
 		}
 	}
 	if !info.Mode().IsRegular() {
-		return "", 0, fmt.Errorf("Codex config %s is not a regular file", path)
+		return "", 0, fmt.Errorf("codex config %s is not a regular file", path)
 	}
 	return target, info.Mode().Perm(), nil
 }
@@ -354,7 +358,7 @@ func removeTomlCommentBlock(source, begin, end string) string {
 	var parser tomlast.Parser
 	parser.KeepComments = true
 	parser.Reset([]byte(source))
-	var pending int = -1
+	pending := -1
 	var edits []sourceEdit
 	for parser.NextExpression() {
 		n := parser.Expression()
@@ -398,7 +402,7 @@ func editCodexValues(doc *codexDocument, updates map[string]map[string]string) (
 			value := fields[key]
 			matches := assignmentsIn(doc, section, key)
 			if len(matches) > 1 {
-				return "", fmt.Errorf("Codex config has duplicate %s.%s assignments", section, key)
+				return "", fmt.Errorf("codex config has duplicate %s.%s assignments", section, key)
 			}
 			if len(matches) == 1 {
 				r := matches[0].value
@@ -434,7 +438,7 @@ func removeCodexValues(doc *codexDocument, removals map[string][]string) (string
 		for _, key := range keys {
 			matches := assignmentsIn(doc, section, key)
 			if len(matches) > 1 {
-				return "", fmt.Errorf("Codex config has duplicate %s.%s assignments", section, key)
+				return "", fmt.Errorf("codex config has duplicate %s.%s assignments", section, key)
 			}
 			if len(matches) == 0 {
 				continue
