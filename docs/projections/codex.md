@@ -13,7 +13,7 @@ rg 'model = "gpt-6-luna"|model_reasoning_effort = "medium"' ~/.codex/agents/must
 codex debug prompt-input "Summarize the active Muster instructions"
 ```
 
-The regular `muster doctor` validates the installed kit and recorded links. `muster doctor --probe` checks harness binary versions. The opt-in **`muster doctor --live`** starts a read-only task in an isolated context and checks actual session and event evidence that the Sol root delegated to a completed Luna Medium worker. For this live check, validation fails closed if the root or worker uses the wrong model or effort, or if delegation is absent. The check consumes usage from the signed-in Codex account.
+The regular `muster doctor` validates the installed kit and recorded links. `muster doctor --probe` checks harness binary versions. The opt-in **`muster doctor --live`** starts a read-only task in an isolated context and checks actual session and event evidence that the Sol root delegated to a completed Luna Medium worker. Validation fails closed if the root uses the wrong model, the worker uses the wrong model or effort, or delegation is absent. The check consumes usage from the signed-in Codex account.
 
 ```bash
 muster doctor --live
