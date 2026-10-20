@@ -12,7 +12,7 @@ muster link      # refresh harness snippets if you use link
 The CLI checks GitHub **at most once per day** for a newer release and prints a hint to stderr:
 
 ```text
-muster v0.4.0 is available (you have v0.3.0). Run: brew update && brew upgrade muster
+muster v0.5.0 is available (you have v0.4.0). Run: brew update && brew upgrade muster
 ```
 
 Skip the check in CI with `MUSTER_SKIP_UPDATE_CHECK=1`. `dev` builds never notify.
