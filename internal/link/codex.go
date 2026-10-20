@@ -3,6 +3,12 @@ package link
 import (
 	"os"
 	"path/filepath"
+	"strings"
+)
+
+const (
+	legacySequentialMapping = "- Task (subagent dispatch) / Subagent / Parallel: run sequentially in main thread; use multi_tool_use.parallel for tool calls"
+	nativeCodexMapping      = "- Task (subagent dispatch) / Subagent / Parallel: use Codex's native subagent controls for delegated work; run independent subtasks concurrently and integrate their results."
 )
 
 func codexHome() string {
@@ -37,6 +43,10 @@ func linkCodexGlobal(kitDir string, dryRun bool) ([]string, error) {
 		return nil, err
 	}
 	touched = append(touched, workerAgent)
+	if err := patchCodexAgentConfig(filepath.Join(dir, "config.toml"), workerAgent, dryRun); err != nil {
+		return nil, err
+	}
+	touched = append(touched, filepath.Join(dir, "config.toml"))
 
 	if err := unlinkCodexAgentsRole(dir, dryRun); err != nil {
 		return nil, err
@@ -47,7 +57,10 @@ func linkCodexGlobal(kitDir string, dryRun bool) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := patchFile(globalAgents, func(s string) string { return upsertManagedBlock(s, block) }, dryRun); err != nil {
+	if err := patchFile(globalAgents, func(s string) string {
+		s = strings.ReplaceAll(s, legacySequentialMapping, nativeCodexMapping)
+		return upsertManagedBlock(s, block)
+	}, dryRun); err != nil {
 		return nil, err
 	}
 	touched = append(touched, globalAgents)
@@ -61,7 +74,7 @@ func linkCodexGlobal(kitDir string, dryRun bool) ([]string, error) {
 
 func unlinkCodexGlobal(dryRun bool) error {
 	dir := codexHome()
-	if err := unlinkTomlFile(filepath.Join(dir, "config.toml"), dryRun); err != nil {
+	if err := unlinkCodexAgentConfig(filepath.Join(dir, "config.toml"), dryRun); err != nil {
 		return err
 	}
 	if err := unlinkCodexAgentsRole(dir, dryRun); err != nil {
@@ -71,7 +84,10 @@ func unlinkCodexGlobal(dryRun bool) error {
 		_ = removeLink(filepath.Join(dir, "agents", workerAgentName+".toml"))
 		_ = removeLink(filepath.Join(dir, "muster-orchestrator.config.toml"))
 		_ = removeLink(filepath.Join(dir, workerAgentName+".config.toml"))
-		_ = patchFile(filepath.Join(dir, "AGENTS.md"), removeManagedBlock, false)
+		_ = patchFile(filepath.Join(dir, "AGENTS.md"), func(s string) string {
+			s = removeManagedBlock(s)
+			return strings.ReplaceAll(s, nativeCodexMapping, legacySequentialMapping)
+		}, false)
 		_ = os.Remove(filepath.Join(dir, "muster-worker.md"))
 	}
 	return nil

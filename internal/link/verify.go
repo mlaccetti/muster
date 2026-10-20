@@ -89,6 +89,15 @@ func verifyCodex(kitDir string, targets []string) []string {
 		if blockErr != nil || err != nil || !strings.Contains(string(data), block) {
 			issues = append(issues, globalInstructions+": muster orchestrator instructions missing")
 		}
+		if err == nil && strings.Contains(string(data), legacySequentialMapping) {
+			issues = append(issues, globalInstructions+": contains contradictory sequential delegation mapping")
+		}
+		config, configErr := os.ReadFile(filepath.Join(dir, "config.toml"))
+		if configErr != nil || !strings.Contains(string(config), `default_subagent_model = "gpt-6-luna"`) ||
+			!strings.Contains(string(config), `default_subagent_reasoning_effort = "medium"`) ||
+			!strings.Contains(string(config), `config_file = "`+globalAgent+`"`) {
+			issues = append(issues, filepath.Join(dir, "config.toml")+": muster subagent defaults or worker registration missing")
+		}
 	}
 	return issues
 }

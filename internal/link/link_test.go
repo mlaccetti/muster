@@ -64,6 +64,23 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("MUSTER_HOME", filepath.Join(home, "muster"))
 	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
+	codexHome := filepath.Join(home, ".codex")
+	if err := os.MkdirAll(codexHome, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(codexHome, "config.toml"), []byte(`model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+[agents]
+max_concurrent_threads_per_session = 5
+
+[mcp_servers.example]
+url = "http://localhost"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(codexHome, "AGENTS.md"), []byte(legacySequentialMapping+"\\n\\nExisting instruction.\\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	kitDir, err := kit.Install()
 	if err != nil {
@@ -88,9 +105,21 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 			t.Errorf("Codex worker config missing %q: %s", required, workerConfig)
 		}
 	}
+	codexConfig, err := os.ReadFile(filepath.Join(codexHome, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, required := range []string{`model = "gpt-6.1-sol"`, `model_reasoning_effort = "high"`, `max_concurrent_threads_per_session = 5`, `default_subagent_model = "gpt-6-luna"`, `default_subagent_reasoning_effort = "medium"`, `[agents.muster-worker]`, `config_file = "` + codexWorker + `"`, `[mcp_servers.example]`, `url = "http://localhost"`} {
+		if !strings.Contains(string(codexConfig), required) {
+			t.Errorf("Codex config missing %q: %s", required, codexConfig)
+		}
+	}
 	globalAgents, err := os.ReadFile(filepath.Join(home, ".codex", "AGENTS.md"))
 	if err != nil || !strings.Contains(string(globalAgents), markerStart) {
 		t.Fatalf("codex global instructions: %v %s", err, globalAgents)
+	}
+	if strings.Contains(string(globalAgents), legacySequentialMapping) || !strings.Contains(string(globalAgents), nativeCodexMapping) || !strings.Contains(string(globalAgents), "Existing instruction.") {
+		t.Errorf("Codex compatibility mapping was not narrowly replaced: %s", globalAgents)
 	}
 	for _, required := range []string{"# Muster orchestrator policy", "## Codex controls", "Use `/goal`"} {
 		if !strings.Contains(string(globalAgents), required) {
@@ -132,6 +161,58 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	agySettings := filepath.Join(home, ".gemini", "antigravity-cli", "settings.json")
 	if _, err := os.Stat(agySettings); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestCodexAgentConfigIsIdempotentAndDryRunSafe(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	initial := `model = "gpt-6.1-sol"
+[agents]
+max_threads = 4
+[mcp_servers.keep]
+url = "https://example.test"
+`
+	if err := os.WriteFile(path, []byte(initial), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	worker := filepath.Join(t.TempDir(), "agents", "muster-worker.toml")
+	if err := patchCodexAgentConfig(path, worker, false); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := os.ReadFile(path)
+	if err := patchCodexAgentConfig(path, worker, false); err != nil {
+		t.Fatal(err)
+	}
+	second, _ := os.ReadFile(path)
+	if string(first) != string(second) {
+		t.Fatalf("link is not idempotent:\\n%s\\n---\\n%s", first, second)
+	}
+	for _, want := range []string{`model = "gpt-6.1-sol"`, `max_threads = 4`, `[mcp_servers.keep]`, `url = "https://example.test"`} {
+		if !strings.Contains(string(second), want) {
+			t.Errorf("unrelated config lost %q: %s", want, second)
+		}
+	}
+	if err := unlinkCodexAgentConfig(path, true); err != nil {
+		t.Fatal(err)
+	}
+	afterDryRun, _ := os.ReadFile(path)
+	if string(afterDryRun) != string(second) {
+		t.Fatal("dry-run unlink changed config")
+	}
+	if err := unlinkCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := unlinkCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	final, _ := os.ReadFile(path)
+	for _, want := range []string{`model = "gpt-6.1-sol"`, "[agents]", "max_threads = 4", "[mcp_servers.keep]", `url = "https://example.test"`} {
+		if !strings.Contains(string(final), want) {
+			t.Errorf("unlink lost unrelated config %q: %s", want, final)
+		}
+	}
+	if strings.Contains(string(final), "default_subagent_model") || strings.Contains(string(final), "config_file") {
+		t.Fatalf("unlink left Muster configuration behind: %s", final)
 	}
 }
 
