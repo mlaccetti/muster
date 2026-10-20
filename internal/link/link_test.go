@@ -64,6 +64,36 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("MUSTER_HOME", filepath.Join(home, "muster"))
 	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
+	codexHome := filepath.Join(home, ".codex")
+	if err := os.MkdirAll(codexHome, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	oldAgent := filepath.Join(home, "old-muster-worker.toml")
+	if err := os.WriteFile(oldAgent, []byte("stale agent"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(codexHome, "agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(oldAgent, filepath.Join(codexHome, "agents", workerAgentName+".toml")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(codexHome, "config.toml"), []byte(`model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+[agents]
+max_concurrent_threads_per_session = 5
+
+[mcp_servers.example]
+url = "http://localhost"
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(filepath.Join(codexHome, "config.toml"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(codexHome, "AGENTS.md"), []byte(legacySequentialMapping+"\n\nExisting instruction.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	kitDir, err := kit.Install()
 	if err != nil {
@@ -76,21 +106,45 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 		t.Fatal(err)
 	}
 	codexWorker := filepath.Join(home, ".codex", "agents", workerAgentName+".toml")
-	if target, err := filepath.EvalSymlinks(codexWorker); err != nil || target != filepath.Join(kitDir, "link", "codex", workerAgentName+".config.toml") {
-		t.Fatalf("codex worker agent: %v %s", err, target)
+	workerInfo, err := os.Lstat(codexWorker)
+	if err != nil || !workerInfo.Mode().IsRegular() || workerInfo.Mode()&os.ModeSymlink != 0 {
+		t.Fatalf("codex worker must be a regular copied file: info=%v err=%v", workerInfo, err)
 	}
 	workerConfig, err := os.ReadFile(filepath.Join(kitDir, "link", "codex", workerAgentName+".config.toml"))
 	if err != nil {
 		t.Fatal(err)
+	}
+	installedWorker, err := os.ReadFile(codexWorker)
+	if err != nil || string(installedWorker) != string(workerConfig) {
+		t.Fatalf("Codex worker copy differs from active kit: %v", err)
 	}
 	for _, required := range []string{`name = "muster-worker"`, `model = "gpt-6-luna"`, `model_reasoning_effort = "medium"`, `developer_instructions = """`} {
 		if !strings.Contains(string(workerConfig), required) {
 			t.Errorf("Codex worker config missing %q: %s", required, workerConfig)
 		}
 	}
+	codexConfig, err := os.ReadFile(filepath.Join(codexHome, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	configInfo, err := os.Stat(filepath.Join(codexHome, "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if configInfo.Mode().Perm() != 0o600 {
+		t.Fatalf("Codex config permissions changed: mode=%v", configInfo.Mode().Perm())
+	}
+	for _, required := range []string{"model = \"gpt-6.1-sol\"", "model_reasoning_effort = \"high\"", "max_concurrent_threads_per_session = 5", "default_subagent_model = \"gpt-6-luna\"", "default_subagent_reasoning_effort = \"medium\"", "[mcp_servers.example]", "url = \"http://localhost\""} {
+		if !strings.Contains(string(codexConfig), required) {
+			t.Errorf("Codex config missing %q: %s", required, codexConfig)
+		}
+	}
 	globalAgents, err := os.ReadFile(filepath.Join(home, ".codex", "AGENTS.md"))
 	if err != nil || !strings.Contains(string(globalAgents), markerStart) {
 		t.Fatalf("codex global instructions: %v %s", err, globalAgents)
+	}
+	if strings.Contains(string(globalAgents), legacySequentialMapping) || !strings.Contains(string(globalAgents), nativeCodexMapping) || !strings.Contains(string(globalAgents), "Existing instruction.") {
+		t.Errorf("Codex compatibility mapping was not narrowly replaced: %s", globalAgents)
 	}
 	for _, required := range []string{"# Muster orchestrator policy", "## Codex controls", "Use `/goal`"} {
 		if !strings.Contains(string(globalAgents), required) {
@@ -132,6 +186,316 @@ func TestLinkGlobalCodexCursorAgy(t *testing.T) {
 	agySettings := filepath.Join(home, ".gemini", "antigravity-cli", "settings.json")
 	if _, err := os.Stat(agySettings); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestCodexAgentConfigIsIdempotentAndDryRunSafe(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	initial := `model = "gpt-6.1-sol"
+[agents]
+max_threads = 4
+[mcp_servers.keep]
+url = "https://example.test"
+`
+	if err := os.WriteFile(path, []byte(initial), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := os.ReadFile(path)
+	if err := patchCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	second, _ := os.ReadFile(path)
+	if string(first) != string(second) {
+		t.Fatalf("link is not idempotent:\n%s\n---\n%s", first, second)
+	}
+	for _, want := range []string{`model = "gpt-6.1-sol"`, `max_threads = 4`, `[mcp_servers.keep]`, `url = "https://example.test"`} {
+		if !strings.Contains(string(second), want) {
+			t.Errorf("unrelated config lost %q: %s", want, second)
+		}
+	}
+	if err := unlinkCodexAgentConfig(path, true); err != nil {
+		t.Fatal(err)
+	}
+	afterDryRun, _ := os.ReadFile(path)
+	if string(afterDryRun) != string(second) {
+		t.Fatal("dry-run unlink changed config")
+	}
+	if err := unlinkCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := unlinkCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	final, _ := os.ReadFile(path)
+	for _, want := range []string{`model = "gpt-6.1-sol"`, "[agents]", "max_threads = 4", "[mcp_servers.keep]", `url = "https://example.test"`} {
+		if !strings.Contains(string(final), want) {
+			t.Errorf("unlink lost unrelated config %q: %s", want, final)
+		}
+	}
+	if strings.Contains(string(final), "default_subagent_model") || strings.Contains(string(final), "config_file") {
+		t.Fatalf("unlink left Muster configuration behind: %s", final)
+	}
+}
+
+func TestCodexConfigParserHandlesQuotedHeadersArraysAndMultilineText(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	initial := "notice = \"\"\"\n# MUSTER_LINK_BEGIN\n[agents]\nnot an actual table\n# MUSTER_LINK_END\n\"\"\"\n[agents]\n  max_threads = 4\n[[skills.config]]\npath = \"skill.toml\"\n"
+	if err := os.WriteFile(path, []byte(initial), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(path)
+	doc, err := parseCodexDocument(string(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := assignmentsIn(doc, "agents", "default_subagent_model"); len(got) != 1 {
+		t.Fatalf("expected one agent default: %s", data)
+	}
+	if got := assignmentsIn(doc, "skills.config", "default_subagent_model"); len(got) != 0 {
+		t.Fatalf("agent default leaked into array table: %s", data)
+	}
+	if !strings.Contains(string(data), "[[skills.config]]") {
+		t.Fatalf("array table was damaged: %s", data)
+	}
+	if !strings.Contains(string(data), "# MUSTER_LINK_BEGIN") || !strings.Contains(string(data), "# MUSTER_LINK_END") {
+		t.Fatalf("marker-like text inside a multiline string was removed: %s", data)
+	}
+}
+
+func TestCodexConfigAtHeaderEOFAndQuotedWorkerSection(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	initial := "[agents]\nmax_threads = 2\n[agents.\"muster-worker\"]\nconfig_file = \"/custom/agent.toml\"\ndescription = \"keep\"\n"
+	if err := os.WriteFile(path, []byte(initial), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(path)
+	doc, err := parseCodexDocument(string(data))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := assignmentsIn(doc, "agents", "default_subagent_model"); len(got) != 1 {
+		t.Fatalf("default absent or duplicated: %s", data)
+	}
+	if !strings.Contains(string(data), "config_file = \"/custom/agent.toml\"") || !strings.Contains(string(data), "description = \"keep\"") {
+		t.Fatalf("custom registration was changed: %s", data)
+	}
+	if err := unlinkCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	restored, _ := os.ReadFile(path)
+	if string(restored) != initial {
+		t.Fatalf("unlink did not restore config exactly:\n%s", restored)
+	}
+
+	eofPath := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(eofPath, []byte("[agents]"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchCodexAgentConfig(eofPath, false); err != nil {
+		t.Fatal(err)
+	}
+	eofData, _ := os.ReadFile(eofPath)
+	eofDoc, err := parseCodexDocument(string(eofData))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(assignmentsIn(eofDoc, "agents", "default_subagent_model")) != 1 {
+		t.Fatalf("header-at-EOF insertion failed: %s", eofData)
+	}
+}
+
+func TestCodexConfigMalformedInputFailsWithoutMutation(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	initial := "[agents]\ndefault_subagent_model = \"unterminated\n"
+	if err := os.WriteFile(path, []byte(initial), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchCodexAgentConfig(path, false); err == nil {
+		t.Fatal("expected invalid TOML error")
+	}
+	data, _ := os.ReadFile(path)
+	if string(data) != initial {
+		t.Fatalf("invalid TOML was changed: %s", data)
+	}
+	if _, err := os.Stat(path + codexConfigStateSuffix); !os.IsNotExist(err) {
+		t.Fatalf("state was written for invalid TOML: %v", err)
+	}
+}
+
+func TestCodexConfigSymlinkIsPreservedAcrossLinkAndUnlink(t *testing.T) {
+	root := t.TempDir()
+	configTarget := filepath.Join(root, "dotfiles", "codex.toml")
+	if err := os.MkdirAll(filepath.Dir(configTarget), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	initial := "[agents]\nmax_threads = 3\nmodel = \"gpt-6.1-sol\"\n"
+	if err := os.WriteFile(configTarget, []byte(initial), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	configLink := filepath.Join(root, "codex", "config.toml")
+	if err := os.MkdirAll(filepath.Dir(configLink), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(configTarget, configLink); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchCodexAgentConfig(configLink, false); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Lstat(configLink)
+	if err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("config symlink replaced: info=%v err=%v", info, err)
+	}
+	target, err := filepath.EvalSymlinks(configLink)
+	wantTarget, wantErr := filepath.EvalSymlinks(configTarget)
+	if err != nil || wantErr != nil || target != wantTarget {
+		t.Fatalf("config symlink target changed: target=%s err=%v", target, err)
+	}
+	info, err = os.Stat(configTarget)
+	if err != nil || info.Mode().Perm() != 0o600 {
+		t.Fatalf("target mode changed: info=%v err=%v", info, err)
+	}
+	if err := unlinkCodexAgentConfig(configLink, false); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(configTarget)
+	if err != nil || string(data) != initial {
+		t.Fatalf("target settings were not restored: %v %s", err, data)
+	}
+	if _, err := os.Lstat(configLink); err != nil {
+		t.Fatalf("config symlink missing after unlink: %v", err)
+	}
+}
+
+func TestCodexConfigDanglingSymlinkFailsWithoutReplacement(t *testing.T) {
+	root := t.TempDir()
+	configLink := filepath.Join(root, "config.toml")
+	if err := os.Symlink(filepath.Join(root, "missing.toml"), configLink); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchCodexAgentConfig(configLink, false); err == nil {
+		t.Fatal("expected dangling config symlink error")
+	}
+	info, err := os.Lstat(configLink)
+	if err != nil || info.Mode()&os.ModeSymlink == 0 {
+		t.Fatalf("dangling symlink was replaced: info=%v err=%v", info, err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "missing.toml")); !os.IsNotExist(err) {
+		t.Fatalf("dangling target was unexpectedly created: %v", err)
+	}
+}
+
+func TestCodexLinkPreflightDoesNotReplaceWorkerWhenConfigIsInvalid(t *testing.T) {
+	home := t.TempDir()
+	codexDir := filepath.Join(home, ".codex")
+	t.Setenv("CODEX_HOME", codexDir)
+	if err := os.MkdirAll(filepath.Join(codexDir, "agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	config := filepath.Join(codexDir, "config.toml")
+	if err := os.WriteFile(config, []byte("[agents]\ninvalid = \"unterminated\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	worker := filepath.Join(codexDir, "agents", workerAgentName+".toml")
+	if err := os.WriteFile(worker, []byte("preserve me"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := linkCodexGlobal(t.TempDir(), false); err == nil {
+		t.Fatal("expected malformed config error")
+	}
+	data, _ := os.ReadFile(worker)
+	if string(data) != "preserve me" {
+		t.Fatalf("worker was replaced before TOML validation: %s", data)
+	}
+	data, _ = os.ReadFile(config)
+	if string(data) != "[agents]\ninvalid = \"unterminated\n" {
+		t.Fatalf("invalid config was changed: %s", data)
+	}
+}
+
+func TestCodexConfigRestoresPreexistingCustomDefaults(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	initial := "[agents]\n  default_subagent_model = 'custom-model' # preserve this comment\n  default_subagent_reasoning_effort = \"low\"\n[agents.\"muster-worker\"]\nconfig_file = \"/custom/agent.toml\"\n"
+	if err := os.WriteFile(path, []byte(initial), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := patchCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile(path)
+	if !strings.Contains(string(data), "default_subagent_model = \"gpt-6-luna\" # preserve this comment") {
+		t.Fatalf("indented key was not replaced in place: %s", data)
+	}
+	if err := unlinkCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	restored, _ := os.ReadFile(path)
+	if string(restored) != initial {
+		t.Fatalf("prior custom values were not restored:\n%s", restored)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("unlink changed config permissions: %o", info.Mode().Perm())
+	}
+	if err := unlinkCodexAgentConfig(path, false); err != nil {
+		t.Fatal(err)
+	}
+	restored, _ = os.ReadFile(path)
+	if string(restored) != initial {
+		t.Fatalf("repeated unlink changed user config:\n%s", restored)
+	}
+}
+
+func TestVerifyCodexRoutingConfigUsesSemanticValues(t *testing.T) {
+	wrong := []byte("# default_subagent_model = \"gpt-6-luna\"\n[other]\ndefault_subagent_model = \"gpt-6-luna\"\ndefault_subagent_reasoning_effort = \"medium\"\n")
+	if verifyCodexRoutingConfig(wrong) {
+		t.Fatal("comment and unrelated section passed verification")
+	}
+	correct := []byte("[agents]\ndefault_subagent_model = \"gpt-6-luna\"\ndefault_subagent_reasoning_effort = \"medium\"\n")
+	if !verifyCodexRoutingConfig(correct) {
+		t.Fatal("valid defaults failed verification")
+	}
+}
+
+func TestVerifyCodexWorkerAgentRejectsSymlinksAndStaleCopies(t *testing.T) {
+	kitDir := t.TempDir()
+	source := kitLinkFile(kitDir, "codex", workerAgentName+".config.toml")
+	if err := os.MkdirAll(filepath.Dir(source), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(source, []byte("name = \"muster-worker\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	dest := filepath.Join(t.TempDir(), "muster-worker.toml")
+	if err := os.WriteFile(dest, []byte("stale"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if msg := verifyCodexWorkerAgent(dest, kitDir); !strings.Contains(msg, "stale") {
+		t.Fatalf("stale copy passed: %q", msg)
+	}
+	if err := os.Remove(dest); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(source, dest); err != nil {
+		t.Fatal(err)
+	}
+	if msg := verifyCodexWorkerAgent(dest, kitDir); !strings.Contains(msg, "regular file") {
+		t.Fatalf("symlink passed: %q", msg)
 	}
 }
 

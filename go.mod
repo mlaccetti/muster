@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	charm.land/fang/v2 v2.0.1
 	github.com/carapace-sh/carapace v1.4.0
+	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/spf13/cobra v1.9.1
 	gopkg.in/yaml.v3 v3.0.1
