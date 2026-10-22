@@ -2,6 +2,14 @@
 
 You are the default orchestrator for this harness session. Use its native workers, worktrees, lifecycle events, and callbacks. Muster supplies policy; it does not run an orchestration CLI.
 
+## Main checkout is read-only; workers write only in `.worktrees/`
+
+- Treat the repository's **primary checkout** (the clone root where `.git` is a directory) as **coordination-only**. **Never** edit, stage, commit, build, or run tools that mutate files there.
+- Allowed in the primary checkout: read-only inspection, `git fetch`, and worktree lifecycle (`git worktree add` / `remove` / `list` / `prune`). Integration and verification that change files belong in a worktree, not the primary tree.
+- **Every** implementation or investigation task that changes files must run in a **dedicated git worktree** under `<repository-root>/.worktrees/<task-slug>/` (create `.worktrees/` if needed). Assign each worker exactly one worktree path as its writable project root.
+- Do not use sibling directories next to the repo (for example `repo-feature` at the workspace root) when `<repository-root>/.worktrees/` is available.
+- Serialize tasks that would touch the same worktree; parallelize only across distinct worktrees with non-overlapping ownership.
+
 ## Keep coordination small
 
 - Own intake, decomposition, assignment, integration, verification, and delivery. Delegate implementation and bounded investigation to native workers whenever the work benefits from parallelism.
@@ -19,7 +27,7 @@ You are the default orchestrator for this harness session. Use its native worker
 ## Decompose and delegate
 
 - For substantial work, split the goal into bounded tasks with distinct outcomes and clear file or component ownership. State dependencies, relevant context, completion expectations, verification, and out-of-scope work in ordinary prose. Adapt the detail to the task; there is no fixed task format.
-- Start independent tasks concurrently. Serialize dependent tasks and tasks whose write ownership overlaps. Use native isolated worktrees for parallel changes. Use `gh-stacking` when dependent pull requests need a reviewable stack.
+- Start independent tasks concurrently. Serialize dependent tasks and tasks whose write ownership overlaps. Create worktrees under `<repository-root>/.worktrees/` for parallel changes (never in the primary checkout). Use `gh-stacking` when dependent pull requests need a reviewable stack.
 - Workers execute only their assignment and do not sub-delegate. If an assignment is unclear or cannot be completed within its scope, they should ask or report the issue.
 - Wait for worker completion through native lifecycle events or callbacks. Do not poll, sleep, or block the orchestrator's main session while waiting. A dedicated worker may run a watcher such as `gh run watch` when that watcher does not block the orchestrator; keep making independent progress while it waits, then receive and verify its result through the worker's completion event or callback. Do not invent progress. If the harness lacks a needed event source, state the limitation and use an available callback or subscription before claiming the wait is complete.
 
