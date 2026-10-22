@@ -2,13 +2,48 @@
 
 You are the default orchestrator for this harness session. Use its native workers, worktrees, lifecycle events, and callbacks. Muster supplies policy; it does not run an orchestration CLI.
 
-## Main checkout is read-only; workers write only in `.worktrees/`
+## Main checkout is read-only; workers write only in `<repository-root>/.worktrees/`
 
 - Treat the repository's **primary checkout** (the clone root where `.git` is a directory) as **coordination-only**. **Never** edit, stage, commit, build, or run tools that mutate files there.
-- Allowed in the primary checkout: read-only inspection, `git fetch`, and worktree lifecycle (`git worktree add` / `remove` / `list` / `prune`). Integration and verification that change files belong in a worktree, not the primary tree.
-- **Every** implementation or investigation task that changes files must run in a **dedicated git worktree** under `<repository-root>/.worktrees/<task-slug>/` (create `.worktrees/` if needed). Assign each worker exactly one worktree path as its writable project root.
-- Do not use sibling directories next to the repo (for example `repo-feature` at the workspace root) when `<repository-root>/.worktrees/` is available.
+- Allowed in the primary checkout: read-only inspection, `git fetch`, and worktree lifecycle (`git worktree add` / `move` / `remove` / `list` / `prune`). Integration and verification that change files belong in a worktree, not the primary tree.
+- **Every** implementation or investigation task that changes files must run in a **dedicated git worktree** whose path is **exactly**:
+
+  `<repository-root>/.worktrees/<task-slug>/`
+
+  Create `.worktrees/` if needed. Assign each worker that **absolute path** as its writable project root. The slug is kebab-case (`^[a-z0-9][a-z0-9-]{0,48}$`): short, descriptive, no repo name prefix, no dates unless they disambiguate.
+
+- **Forbidden worktree locations** (never create new trees here; move existing ones with `git worktree move` before assigning work):
+  - Sibling folders next to the repo at the workspace root (for example `workspace/codae-wt-806` beside `workspace/codae`).
+  - Shared workspace buckets (for example `workspace/.worktrees/...`).
+  - `/tmp`, `/private/tmp`, `~/.codex/worktrees`, or any path outside `<repository-root>/.worktrees/`.
+
 - Serialize tasks that would touch the same worktree; parallelize only across distinct worktrees with non-overlapping ownership.
+
+### Branch naming (required for every new worktree)
+
+Use the GitHub login as the first path segment (from `gh api user -q .login`, or the local part of `git config user.email` when GitHub is unavailable). Branch names must follow **conventional-commit types** as the second segment:
+
+`<github-login>/<type>/<kebab-description>`
+
+- `<type>` is one of: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+- `<kebab-description>` matches the worktree slug or a clear subset of it (same words, kebab-case).
+- Examples: `michael/fix/otlp-endpoint-url`, `michael/ci/android-hosted-burst`, `michael/chore/gitignore-worktrees`.
+- Do **not** use detached HEAD for implementation work. Do **not** use `codex/...`, `agent/...`, or branch names without the `<github-login>/` prefix unless you are continuing an existing remote branch verbatim.
+
+### Creating a worktree (orchestrator checklist)
+
+From `<repository-root>` (primary checkout, read-only except for this command):
+
+```bash
+LOGIN="$(gh api user -q .login 2>/dev/null || git config user.email | cut -d@ -f1)"
+SLUG="fix-otlp-endpoint-url"          # kebab-case task slug
+TYPE="fix"                            # conventional-commit type
+BRANCH="${LOGIN}/${TYPE}/${SLUG}"
+git fetch origin main
+git worktree add ".worktrees/${SLUG}" -b "${BRANCH}" "origin/main"
+```
+
+Give the worker the absolute path `<repository-root>/.worktrees/${SLUG}`. If a worktree already exists in a forbidden location, run `git worktree move <old-path> "<repository-root>/.worktrees/${SLUG}"` before delegation.
 
 ## Keep coordination small
 
