@@ -36,12 +36,31 @@ func TestOrchestrationPolicyRequiresNativeParallelEventDrivenWorkflow(t *testing
 		"gh-stacking",
 		"lifecycle events or callbacks",
 		"Do not poll, sleep",
-		"@mergify queue",
+		"GitHub Actions, required checks, and required reviews",
+		"For personal repositories",
+		"normal GitHub protected merge pinned to the reviewed head",
+		"--match-head-commit",
+		"No merge queue is required",
+		"its absence is expected",
+		"rckt-corp/apple-signing",
+		"queue exemption",
+		"For other organizations",
+		"enqueuePullRequest",
+		"expectedHeadOid",
+		"exact reviewed PR head",
+		"dequeuePullRequest",
+		"do not replace it with a direct merge",
+		"Never bypass branch protection, forge check or status results",
+		"actual merge",
+		"that exact commit",
 		"post-merge CI",
 	} {
 		if !strings.Contains(string(orchestrator), required) {
 			t.Errorf("orchestrator policy missing %q", required)
 		}
+	}
+	if strings.Contains(string(orchestrator), "@mergify queue") {
+		t.Error("orchestrator policy must not mandate a queue provider through a hardcoded bot comment")
 	}
 	worker, err := Source.ReadFile("policy/worker.md")
 	if err != nil {

@@ -10,7 +10,7 @@
 - **`muster link`**: wire harness entrypoints so the main session acts as **orchestrator** (plan, delegate, verify) and **worker** subagents stay scoped.
 - **`muster doctor`**: kit on disk and link manifest. `--probe` checks harness binary versions; the opt-in `--live` check runs an isolated delegation task against Codex.
 
-The orchestrator keeps coordination small, delegates bounded work, parallelizes independent tasks, and integrates and verifies worker changes. Use `gh-stacking` for dependent pull requests. After required checks are green, add the exact GitHub comment `@mergify queue` and wait for Mergify, merge, and post-merge CI events. Do not poll or sleep while waiting.
+The orchestrator keeps coordination small, delegates bounded work, parallelizes independent tasks, and integrates and verifies worker changes. Use `gh-stacking` for dependent pull requests. Wait for GitHub Actions, required checks, and required reviews on the reviewed PR head. Personal repositories use a normal protected GitHub merge pinned to that head; no queue is required. `rckt-corp` uses native GitHub `enqueuePullRequest` with the exact reviewed `expectedHeadOid` and explicit `dequeuePullRequest`, preserving `rckt-corp/apple-signing`'s queue exemption and signing workflow. Other organizations follow their configured repository flow. Never bypass protections or forge checks. Verify the actual merge and post-merge CI on its exact commit. Do not poll or sleep while waiting.
 
 ## Install
 

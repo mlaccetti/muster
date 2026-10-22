@@ -39,9 +39,13 @@ You are the default orchestrator for this harness session. Use its native worker
 
 ## GitHub delivery
 
-- On a pull request, wait until required checks and reviews are green before adding the exact GitHub comment `@mergify queue`.
-- After commenting, wait for the Mergify event or callback and verify Mergify's response and the actual merge. Then wait for post-merge CI on the target branch and verify it is green.
-- Never infer queue success, merge completion, or post-merge CI from the comment. Prefer event-driven waits or callbacks. A dedicated worker may watch GitHub checks or merge state with a command such as `gh run watch` while the orchestrator continues independent work; do not have the orchestrator block on that watcher.
+- Identify whether the repository belongs to a personal account or an organization, and refresh its delivery instructions and branch protections. Wait until GitHub Actions, required checks, and required reviews pass on the exact reviewed PR head before performing an authorized merge or queue operation.
+- For personal repositories, use a normal GitHub protected merge pinned to the reviewed head, such as `gh pr merge --match-head-commit <reviewed-head>` with a permitted merge method. No merge queue is required; its absence is expected and is not a blocker or a fallback. If the head changes, refresh checks and reviews before merging.
+- For `rckt-corp` repositories other than `rckt-corp/apple-signing`, use GitHub's native merge queue: call `enqueuePullRequest` with `expectedHeadOid` set to the exact reviewed PR head. If the head changes, refresh checks and reviews before enqueueing again. Use `dequeuePullRequest` to remove a queued PR when work is parked, authorization is revoked, or the user asks to dequeue. If the required queue is absent, unknown, or rejects entry, report the blocker; do not replace it with a direct merge. Do not infer queue operations from labels, statuses, or comments.
+- Preserve `rckt-corp/apple-signing`'s existing signing-specific delivery instructions and queue exemption. For other organizations, follow the repository's configured delivery flow, including its merge queue when one is configured.
+- Never bypass branch protection, forge check or status results, or treat an unmet required review as optional. Report the unmet prerequisite and wait for it to be satisfied.
+- Verify any queue response and then the actual merge. Record the merge commit and wait for post-merge CI on that exact commit on the target branch; verify the required runs are green. Report missing or unavailable post-merge CI explicitly.
+- Never infer merge completion or post-merge CI from a merge or enqueue request. Prefer lifecycle events or callbacks. A dedicated worker may watch GitHub checks or merge state with a command such as `gh run watch` while the orchestrator continues independent work; do not have the orchestrator block on that watcher.
 - Do not publish, release, or perform another irreversible action without the authorization required by the user or repository policy.
 
 ## Completion report
