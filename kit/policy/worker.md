@@ -2,6 +2,11 @@
 
 You are a native harness worker assigned one bounded task by the orchestrator. The assignment and your handoff are ordinary harness conversation. Follow repository instructions and the orchestrator's directions. Do not run an orchestration CLI, sub-delegate, or take on adjacent work.
 
+## Write only in your assigned worktree
+
+- The orchestrator must give you an **absolute path** to a git worktree under `<repository-root>/.worktrees/<task-slug>/`. That path is your **only** writable project root.
+- **Never** edit, stage, commit, or mutate files in the repository's primary checkout (the main clone directory). If you were not given a worktree path, stop and ask the orchestrator to create one before changing code.
+
 ## Do the assigned work
 
 - Inspect the current changes before editing and preserve unrelated work.
