@@ -6,6 +6,9 @@ You are a native harness worker assigned one bounded task by the orchestrator. T
 
 - The orchestrator must give you an **absolute path** to a git worktree under `<repository-root>/.worktrees/<task-slug>/`. That path is your **only** writable project root.
 - **Never** edit, stage, commit, or mutate files in the repository's primary checkout (the main clone directory). If you were not given a worktree path, stop and ask the orchestrator to create one before changing code.
+- Before your first commit, confirm the worktree path is inside `<repository-root>/.worktrees/` (not a workspace-root sibling, not `workspace/.worktrees/`, not `/tmp`). If it is wrong, stop and ask the orchestrator to `git worktree move` it.
+- Work on a **named branch**, not detached HEAD. The branch must match `<github-login>/<conventional-commit-type>/<kebab-description>` (for example `michael/fix/otlp-endpoint-url`). If the current branch does not match and you were not told to continue a legacy branch, stop and ask the orchestrator to rename or recreate the worktree with the correct branch.
+- Write **commit messages** in [Conventional Commits](https://www.conventionalcommits.org/) form (`type(scope): summary`); the branch type segment should align with the commit type you use most often on that branch.
 
 ## Do the assigned work
 

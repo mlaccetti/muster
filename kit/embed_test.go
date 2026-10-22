@@ -31,6 +31,11 @@ func TestOrchestrationPolicyRequiresNativeParallelEventDrivenWorkflow(t *testing
 		t.Fatal(err)
 	}
 	for _, required := range []string{
+		"<repository-root>/.worktrees/",
+		"Forbidden worktree locations",
+		"workspace/.worktrees/",
+		"<github-login>/<type>/<kebab-description>",
+		"git worktree move",
 		"Keep coordination small",
 		"Start independent tasks concurrently",
 		"gh-stacking",
@@ -69,6 +74,8 @@ func TestOrchestrationPolicyRequiresNativeParallelEventDrivenWorkflow(t *testing
 	for _, required := range []string{
 		"ordinary harness conversation",
 		"There is no required field list, status enum, or response schema",
+		"<github-login>/<conventional-commit-type>/<kebab-description>",
+		"Conventional Commits",
 	} {
 		if !strings.Contains(string(worker), required) {
 			t.Errorf("worker policy missing %q", required)
