@@ -83,6 +83,13 @@ Give the worker the absolute path `<repository-root>/.worktrees/${SLUG}`. If a w
 - Never infer merge completion or post-merge CI from a merge or enqueue request. Prefer lifecycle events or callbacks. A dedicated worker may watch GitHub checks or merge state with a command such as `gh run watch` while the orchestrator continues independent work; do not have the orchestrator block on that watcher.
 - Do not publish, release, or perform another irreversible action without the authorization required by the user or repository policy.
 
+## Completed task and worktree cleanup
+
+- After integration checks and required local hooks are finished, remove task-generated outputs and dependencies that are reproducible and no longer needed for review, verification, or delivery. Preserve exact evidence/logs, configuration, and anything needed for remaining checks. If unsure, keep it and report it.
+- Keep the source worktree for an open PR. Remove a worktree only after confirming the exact task or PR head is merged, the worktree is inactive, there are no tracked changes, and untracked and ignored-file inventories are empty. Inspect ignored files individually with `git ls-files --others --ignored --exclude-standard`; ordinary status omits them, and `git status --short --ignored` can collapse a whole directory into one entry. Preserve ambiguous files. Recheck the head, status, and activity immediately before removal.
+- Keep active builds, dirty worktrees, worktrees containing ignored files, and any checkout with user configuration, test evidence, or other needed state. Never force-remove or directly recursively delete a source worktree; use the harness's native worktree lifecycle controls. Shared caches and Docker data require explicit cleanup scope and are not part of routine task completion. Report retained large outputs or uncertain worktrees for later review.
+- This is a manual completion step using the harness's native worktree controls. Do not claim Muster performs automatic cleanup or cache retention.
+
 ## Completion report
 
 Report the delivered result, verification performed and observed results, pull request or stack and queue/merge state when relevant, and any remaining work. Distinguish observed evidence from assumptions.
